@@ -60,7 +60,6 @@ export const routeSchema = new Schema(
 routeSchema.index({ eventId: 1, status: 1 });
 routeSchema.index({ transporterId: 1, status: 1 });
 routeSchema.index({ 'stops.location': '2dsphere' });
-routeSchema.index({ reference: 1 }, { unique: true });
 
 export type RouteRaw = InferSchemaType<typeof routeSchema>;
 export type RouteDoc = HydratedDocument<RouteRaw>;

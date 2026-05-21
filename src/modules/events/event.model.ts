@@ -71,7 +71,6 @@ export const eventSchema = new Schema(
 
 eventSchema.index({ status: 1, startDate: 1 });
 eventSchema.index({ 'zones.area': '2dsphere' });
-eventSchema.index({ slug: 1 }, { unique: true });
 
 export type EventRaw = InferSchemaType<typeof eventSchema>;
 export type EventDoc = HydratedDocument<EventRaw>;

@@ -7,6 +7,10 @@ services:
     volumes:
       - mongo-data:/data/db
       - mongo-config:/data/configdb
+    ports:
+      # Exposé uniquement à 127.0.0.1 → permet `npm run dev` depuis l'host
+      # avec MONGO_URI=mongodb://localhost:27017/...?directConnection=true
+      - "127.0.0.1:27017:27017"
     networks:
       - logichain-internal
     healthcheck:

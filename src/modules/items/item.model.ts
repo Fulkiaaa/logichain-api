@@ -107,7 +107,6 @@ export const itemSchema = new Schema(
 itemSchema.index({ eventId: 1, status: 1 });
 itemSchema.index({ category: 1, status: 1 });
 itemSchema.index({ location: '2dsphere' });
-itemSchema.index({ qrCode: 1 }, { unique: true });
 
 export type ItemRaw = InferSchemaType<typeof itemSchema>;
 export type ItemDoc = HydratedDocument<ItemRaw>;

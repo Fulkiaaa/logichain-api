@@ -25,7 +25,6 @@ export const userSchema = new Schema(
   },
 );
 
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1, active: 1 });
 
 export type UserRaw = InferSchemaType<typeof userSchema>;
