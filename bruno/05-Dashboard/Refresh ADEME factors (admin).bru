@@ -1,0 +1,42 @@
+meta {
+  name: Refresh ADEME factors (admin)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboard/emission-factors/refresh
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Force un re-fetch immédiat des facteurs ADEME, sans attendre la
+  prochaine échéance du cache (24h).
+
+  Utile :
+    - en démo orale, pour montrer en direct que la valeur vient bien
+      de l'API ADEME (timestamp `fetchedAt` mis à jour)
+    - pour invalider manuellement le cache si ADEME a publié une
+      nouvelle version de la Base Carbone
+
+  Réservé au rôle `admin` (HTTP 403 sinon).
+
+  Réponse 200 :
+  {
+    "status": "refreshed",
+    "factors": {
+      "truck": { value, source, ademeId, fetchedAt },
+      ...
+    }
+  }
+
+  Tester en démo :
+    1. Lancer Emission factors (ADEME live) → noter fetchedAt
+    2. Lancer ce refresh
+    3. Re-lancer Emission factors → fetchedAt mis à jour ✓
+}

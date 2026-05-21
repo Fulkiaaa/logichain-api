@@ -118,8 +118,8 @@ describe('CarbonFootprintService', () => {
     it('applique la formule ADEME (tonnes × km × facteur)', () => {
       const route = buildRoute({ mode: 'truck', plannedDistanceKm: 200, totalWeightKg: 3000 });
       const fp = service.computeRouteFootprint(route);
-      // 3 tonnes × 200 km × 0.105 = 63 kgCO2e
-      expect(fp.co2Kg).toBeCloseTo(63, 2);
+      // 3 tonnes × 200 km × 0.058 (Rigide ADEME #28030) = 34,8 kgCO2e
+      expect(fp.co2Kg).toBeCloseTo(34.8, 1);
       expect(fp.emissionFactor).toBe(TRANSPORT_EMISSION_FACTORS.truck);
     });
 
@@ -127,8 +127,8 @@ describe('CarbonFootprintService', () => {
       const route = buildRoute({ plannedDistanceKm: 200, totalWeightKg: 3000 });
       route.recordActualDistance(150);
       const fp = service.computeRouteFootprint(route);
-      // 3 × 150 × 0.105 = 47.25
-      expect(fp.co2Kg).toBeCloseTo(47.25, 2);
+      // 3 × 150 × 0.058 = 26,1 kgCO2e
+      expect(fp.co2Kg).toBeCloseTo(26.1, 1);
     });
 
     it('renvoie 0 pour le vélo cargo (facteur = 0)', () => {
@@ -185,14 +185,15 @@ describe('CarbonFootprintService', () => {
 
       expect(report.eventDurationDays).toBe(4);
       expect(report.manufacturingCo2Kg).toBeGreaterThan(0);
-      expect(report.transportCo2Kg).toBeCloseTo(21, 0); // 2t × 100km × 0.105 = 21
+      // 2t × 100km × 0.058 (Rigide ADEME #28030) = 11,6 kgCO2e
+      expect(report.transportCo2Kg).toBeCloseTo(11.6, 1);
       expect(report.totalCo2Kg).toBeCloseTo(
         report.manufacturingCo2Kg + report.transportCo2Kg,
         2,
       );
       expect(report.byCategory.lighting).toBeDefined();
       expect(report.byCategory.sound).toBeDefined();
-      expect(report.byTransportMode.truck).toBeCloseTo(21, 0);
+      expect(report.byTransportMode.truck).toBeCloseTo(11.6, 1);
     });
 
     it('lève NotFoundError si l\'événement n\'existe pas', async () => {

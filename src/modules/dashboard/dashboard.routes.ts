@@ -8,6 +8,7 @@ import { ITEM_CATEGORIES } from '@/modules/items/item.model';
 import { itemRepository } from '@/modules/items/item.routes';
 import { idParamSchema, objectIdSchema } from '@/modules/items/item.schemas';
 import { routeRepository } from '@/modules/routes/route.routes';
+import { ademeFactorService } from '@/services/AdemeFactorService';
 import { CarbonFootprintService } from '@/services/CarbonFootprintService';
 import { ResourceAllocationService } from '@/services/ResourceAllocationService';
 
@@ -24,6 +25,34 @@ dashboardRouter.get(
   async (req, res) => {
     const report = await carbonService.computeEventReport(req.params.id!);
     res.status(200).json(report);
+  },
+);
+
+/**
+ * Expose l'état courant du cache des facteurs ADEME — pour debug, audit
+ * et présentation. Indique pour chaque mode si la valeur vient de l'API
+ * live, du cache, ou du fallback hardcodé.
+ */
+dashboardRouter.get('/emission-factors', (_req, res) => {
+  res.status(200).json({
+    source: 'https://data.ademe.fr/data-fair/api/v1/datasets/base-carboner',
+    factors: ademeFactorService.snapshot(),
+  });
+});
+
+/**
+ * Force un refresh immédiat du cache ADEME (admin uniquement).
+ * Utile en démo orale pour montrer que la valeur vient bien de l'API.
+ */
+dashboardRouter.post(
+  '/emission-factors/refresh',
+  requireRole('admin'),
+  async (_req, res) => {
+    await ademeFactorService.refresh();
+    res.status(200).json({
+      status: 'refreshed',
+      factors: ademeFactorService.snapshot(),
+    });
   },
 );
 

@@ -190,15 +190,25 @@ Exemple : projecteur 50 kg, 500 kgCO2e de fabrication, durée de vie 10 ans
 co2_transport = (totalWeightKg / 1000) × distanceKm × facteur[mode]
 ```
 
-Facteurs d'émission utilisés (kgCO2e par tonne·km) :
+Facteurs d'émission Base Carbone® ADEME (kgCO2e par tonne·km) :
 
-| Mode             | Facteur |
-|------------------|---------|
-| `truck`          | 0,105   |
-| `electric_truck` | 0,040   |
-| `van`            | 0,220   |
-| `rail`           | 0,0095  |
-| `bike_cargo`     | 0       |
+| Mode             | Facteur courant | Source                                |
+|------------------|-----------------|---------------------------------------|
+| `truck`          | 0,058           | API ADEME live · Rigide · ID 28030    |
+| `rail`           | 0,00401         | API ADEME live · Train · ID 43732     |
+| `electric_truck` | 0,020           | Fallback (pas de valeur ADEME 2026)   |
+| `van`            | 0,082           | Fallback (ADEME en kgCO2e/km, ID 28280) |
+| `bike_cargo`     | 0               | Fallback (négligeable)                |
+
+**Les facteurs sont chargés depuis l'API Open Data ADEME** au démarrage
+de l'application, puis rafraîchis toutes les 24h. Si l'API ADEME est
+indisponible, on retombe sur les valeurs hardcodées correspondantes.
+
+→ Endpoint debug : `GET /api/v1/dashboard/emission-factors` expose
+l'état courant du cache (source : `ademe-live`, `ademe-cached`, ou `fallback`).
+
+→ Endpoint admin : `POST /api/v1/dashboard/emission-factors/refresh` force
+un re-fetch immédiat depuis l'ADEME.
 
 La distance réelle (`actualDistanceKm`) prime sur la planifiée si disponible.
 

@@ -1,0 +1,46 @@
+meta {
+  name: Emission factors (ADEME live)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboard/emission-factors
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Endpoint d'introspection du cache des facteurs d'émission.
+
+  Au démarrage de l'API, le service AdemeFactorService fait un fetch
+  vers l'API Open Data ADEME (data.ademe.fr) pour récupérer les
+  facteurs réels par identifiant ADEME :
+    - #28030 Camion Rigide France continentale
+    - #43732 Train fret France continentale
+
+  Cache TTL = 24h. Si l'API ADEME est down, on garde les fallbacks
+  hardcodés et l'API LogiChain continue à fonctionner.
+
+  Réponse :
+  {
+    "source": "https://data.ademe.fr/data-fair/api/v1/datasets/base-carboner",
+    "factors": {
+      "truck":          { value, source: "ademe-live", ademeId, fetchedAt },
+      "rail":           { value, source: "ademe-live", ademeId, fetchedAt },
+      "electric_truck": { value, source: "fallback",            fetchedAt },
+      "van":            { value, source: "fallback",            fetchedAt },
+      "bike_cargo":     { value, source: "fallback",            fetchedAt }
+    }
+  }
+
+  Le champ "source" peut prendre 3 valeurs :
+    - "ademe-live"   : valeur récupérée depuis l'API ADEME (< 24h)
+    - "ademe-cached" : valeur en cache, refresh asynchrone en cours
+    - "fallback"     : valeur hardcodée (ADEME indisponible ou pas de
+                       requête configurée pour ce mode)
+}

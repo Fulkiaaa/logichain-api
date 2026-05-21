@@ -8,6 +8,8 @@ import type { RouteEntity } from '@/modules/routes/route.entity';
 import type { TransportMode } from '@/modules/routes/route.model';
 import type { RouteRepository } from '@/modules/routes/route.repository';
 
+import { AdemeFactorService, ademeFactorService } from './AdemeFactorService';
+
 /**
  * ============================================================================
  *  CarbonFootprintService — calcul d'empreinte carbone selon la méthodologie
@@ -33,13 +35,20 @@ import type { RouteRepository } from '@/modules/routes/route.repository';
  *
  *         co2_transport = (totalWeightKg / 1000) × distanceKm × factor[mode]
  *
- *     Les facteurs (kgCO2e par tonne.km) viennent de la Base Carbone ADEME 2024 :
+ *     Les facteurs (kgCO2e par tonne.km) sont issus de la Base Carbone®
+ *     ADEME (base-empreinte.ademe.fr) — version consultée en mai 2026 :
  *
- *         truck (camion 7,5-26t)   = 0,105
- *         electric_truck           = 0,040  (mix électrique FR)
- *         van (utilitaire diesel)  = 0,220
- *         rail (fret ferroviaire)  = 0,0095
- *         bike_cargo               = 0      (négligeable)
+ *         truck (PL 7,5 t < PTAC < 26 t) = 0,772
+ *         electric_truck                  = 0,020   (mix élec. amont inclus)
+ *         van (VUL diesel)                = 1,000   (ordre de grandeur VUL)
+ *         rail (fret ferroviaire)         = 0,004
+ *         bike_cargo                      = 0       (négligeable)
+ *
+ *     Note méthodologique : ces facteurs incluent les émissions amont
+ *     (extraction + raffinage du carburant ou production d'électricité)
+ *     en plus de la combustion. Le camion électrique n'est pas à zéro :
+ *     l'essentiel de ses émissions est déplacé vers la production
+ *     d'électricité et la fabrication du véhicule.
  *
  *     On privilégie distance réelle (actualDistanceKm) si disponible,
  *     sinon distance planifiée.
@@ -51,14 +60,12 @@ import type { RouteRepository } from '@/modules/routes/route.repository';
  * ============================================================================
  */
 
-/** Facteurs d'émission ADEME Base Carbone 2024, en kgCO2e par tonne·km. */
-export const TRANSPORT_EMISSION_FACTORS: Record<TransportMode, number> = {
-  truck: 0.105,
-  electric_truck: 0.04,
-  van: 0.22,
-  rail: 0.0095,
-  bike_cargo: 0,
-};
+/**
+ * @deprecated Les facteurs d'émission sont désormais gérés par
+ * `AdemeFactorService` (cache live de l'API ADEME + fallback hardcodé).
+ * Cet export reste pour compatibilité ; utilisez `service.getEmissionFactor()`.
+ */
+export { TRANSPORT_EMISSION_FACTORS } from './AdemeFactorService';
 
 export interface ItemFootprint {
   itemId: string;
@@ -94,7 +101,13 @@ export class CarbonFootprintService {
     private readonly itemRepo: ItemRepository,
     private readonly eventRepo: EventRepository,
     private readonly routeRepo: RouteRepository,
+    private readonly factorService: AdemeFactorService = ademeFactorService,
   ) {}
+
+  /** Renvoie le facteur courant — issu de l'API ADEME ou du fallback. */
+  public getEmissionFactor(mode: TransportMode): number {
+    return this.factorService.getFactor(mode);
+  }
 
   /**
    * Empreinte fabrication amortie d'un item pour la durée d'un événement.
@@ -115,7 +128,7 @@ export class CarbonFootprintService {
   public computeRouteFootprint(route: RouteEntity): RouteFootprint {
     const distanceKm = route.distanceUsedForCarbonKm;
     const weightTonnes = route.totalWeightKg / 1000;
-    const factor = TRANSPORT_EMISSION_FACTORS[route.mode];
+    const factor = this.factorService.getFactor(route.mode);
     const co2 = distanceKm * weightTonnes * factor;
     return {
       routeId: route.id,

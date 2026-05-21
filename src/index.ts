@@ -2,9 +2,14 @@ import { buildApp } from '@/app';
 import { env } from '@/config/env';
 import { logger } from '@/core/logger';
 import { connectMongo, disconnectMongo } from '@/db/mongoose';
+import { ademeFactorService } from '@/services/AdemeFactorService';
 
 async function bootstrap(): Promise<void> {
   await connectMongo();
+
+  // Pré-chauffe le cache des facteurs ADEME en arrière-plan.
+  // Si l'API ADEME est down, les valeurs fallback restent actives.
+  ademeFactorService.warmup();
 
   const app = buildApp();
   const server = app.listen(env.PORT, () => {
