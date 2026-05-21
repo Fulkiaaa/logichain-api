@@ -1,0 +1,15 @@
+meta {
+  name: Return to stock
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/return
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

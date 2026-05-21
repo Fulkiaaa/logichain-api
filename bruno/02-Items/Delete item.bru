@@ -1,0 +1,19 @@
+meta {
+  name: Delete item
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  204 No Content si OK. 422 si l'item est en cours d'utilisation.
+}

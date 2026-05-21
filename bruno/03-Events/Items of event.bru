@@ -1,0 +1,19 @@
+meta {
+  name: Items of event
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/events/{{eventId}}/items
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Sous-ressource — items alloués à cet événement.
+}

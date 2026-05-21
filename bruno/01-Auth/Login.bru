@@ -1,0 +1,31 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@logichain.fr",
+    "password": "changeme-now-please"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setEnvVar("token", res.body.token);
+    bru.setEnvVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+docs {
+  Authentifie l'utilisateur et stocke le token JWT dans l'env Bruno.
+  - 200 : { token, refreshToken, user }
+  - 401 : email/mot de passe invalide OU compte désactivé
+}

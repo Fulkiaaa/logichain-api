@@ -1,0 +1,24 @@
+meta {
+  name: Carbon footprint of event
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/dashboard/events/{{eventId}}/carbon-footprint
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Rapport empreinte carbone agrégé pour l'événement :
+    - manufacturingCo2Kg (fabrication amortie sur durée évent)
+    - transportCo2Kg (somme routes : tonnes × km × facteur ADEME)
+    - byCategory (lighting, sound, …)
+    - byTransportMode (truck, electric_truck, …)
+  Méthodologie : Base Carbone® ADEME.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Complete stop
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/routes/{{routeId}}/stops/{{stopId}}/complete
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+docs {
+  Marque une étape comme terminée. La route doit être en in_progress.
+}

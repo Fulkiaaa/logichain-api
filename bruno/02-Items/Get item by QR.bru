@@ -1,0 +1,19 @@
+meta {
+  name: Get item by QR
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/items/by-qr/QR-LED-001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Endpoint principal du scan terrain : l'agent flashe un QR, récupère l'item.
+}

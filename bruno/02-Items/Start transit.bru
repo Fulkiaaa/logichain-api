@@ -1,0 +1,25 @@
+meta {
+  name: Start transit
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/transit
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "location": { "type": "Point", "coordinates": [2.4, 48.9] }
+  }
+}
+
+docs {
+  Transition allocated → in_transit.
+}

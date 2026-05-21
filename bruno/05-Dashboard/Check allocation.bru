@@ -1,0 +1,40 @@
+meta {
+  name: Check allocation (Banker's)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/dashboard/allocations/check
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "eventId": "{{eventId}}",
+    "category": "lighting",
+    "quantity": 5,
+    "forecasts": {
+      "{{eventId}}": { "lighting": 20, "sound": 10 }
+    }
+  }
+}
+
+docs {
+  Demande d'allocation passée à l'algorithme du banquier.
+
+  Réponse :
+    - 200 granted=true  → l'allocation laisse le système dans un état sûr
+    - 422 granted=false → refusée (stock insuffisant, dépasse besoin max,
+                          ou état résultant non-sûr → risque de goulot)
+
+  Le champ "forecasts" décrit le besoin total prévisionnel de chaque
+  événement, par catégorie de ressource. Le banquier vérifie qu'il
+  existe une séquence d'événements où chaque besoin pourra être
+  satisfait → état sûr au sens de Dijkstra.
+}

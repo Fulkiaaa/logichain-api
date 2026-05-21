@@ -1,0 +1,25 @@
+meta {
+  name: Deploy on site
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/deploy
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "location": { "type": "Point", "coordinates": [2.5, 48.95] }
+  }
+}
+
+docs {
+  Transition in_transit → deployed.
+}

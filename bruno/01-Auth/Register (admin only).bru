@@ -1,0 +1,32 @@
+meta {
+  name: Register (admin only)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "email": "agent1@logichain.fr",
+    "password": "changeme-strong-password",
+    "fullName": "Agent Numéro 1",
+    "role": "field_agent"
+  }
+}
+
+docs {
+  Création d'utilisateur — réservé aux administrateurs (rôle = admin).
+  - 201 : utilisateur créé (sans passwordHash)
+  - 401 : token manquant/invalide
+  - 403 : rôle insuffisant
+  - 409 : email déjà utilisé
+}

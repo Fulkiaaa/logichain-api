@@ -1,0 +1,28 @@
+meta {
+  name: List items
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/items?page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~status: in_stock
+  ~category: lighting
+  ~eventId: {{eventId}}
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Liste paginée des items avec filtres optionnels.
+  Format réponse : { data: [...], count, page, limit, totalPages }
+}

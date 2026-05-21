@@ -1,0 +1,25 @@
+meta {
+  name: Record actual distance
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/routes/{{routeId}}/distance
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "actualDistanceKm": 192
+  }
+}
+
+docs {
+  La distance réelle remplace la planifiée pour le calcul d'empreinte carbone.
+}

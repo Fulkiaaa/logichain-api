@@ -1,0 +1,37 @@
+meta {
+  name: Create item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "qrCode": "QR-LED-001",
+    "label": "Projecteur LED Cameo 200W",
+    "category": "lighting",
+    "weightKg": 8.5,
+    "purchasePriceEur": 1200,
+    "lifespanYears": 8,
+    "manufacturingCo2Kg": 320
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("itemId", res.body.id);
+  }
+}
+
+docs {
+  Crée un item. Si qrCode existe déjà → 409 Conflict.
+}

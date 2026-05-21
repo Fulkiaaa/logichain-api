@@ -1,0 +1,28 @@
+meta {
+  name: Transition status
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/events/{{eventId}}/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "status": "active"
+  }
+}
+
+docs {
+  Transitions autorisées :
+    planning → active | cancelled
+    active   → closed | cancelled
+    closed / cancelled : terminal
+}

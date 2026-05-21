@@ -1,0 +1,86 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: logichain-mongo
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all", "--quiet"]
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+    networks:
+      - logichain-internal
+    healthcheck:
+      # Auto-init du replica set au premier démarrage, puis attente du PRIMARY.
+      test: >-
+        mongosh --quiet --eval '
+          try {
+            rs.status();
+          } catch (e) {
+            if (e.codeName === "NotYetInitialized") {
+              rs.initiate({_id: "rs0", members: [{_id: 0, host: "mongo:27017"}]});
+            } else {
+              throw e;
+            }
+          }
+          db.runCommand({hello: 1}).isWritablePrimary === true || quit(1);
+        '
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logichain-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MONGO_URI: mongodb://mongo:27017/logichain?replicaSet=rs0
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-2h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://logichain.fulkia.fr}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+    networks:
+      - logichain-internal
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
+      # Routeur HTTPS principal
+      - "traefik.http.routers.logichain-api.rule=Host(`api-logichain.fulkia.fr`)"
+      - "traefik.http.routers.logichain-api.entrypoints=websecure"
+      - "traefik.http.routers.logichain-api.tls=true"
+      - "traefik.http.routers.logichain-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.logichain-api.service=logichain-api"
+      - "traefik.http.services.logichain-api.loadbalancer.server.port=3000"
+      # Redirection HTTP → HTTPS
+      - "traefik.http.routers.logichain-api-http.rule=Host(`api-logichain.fulkia.fr`)"
+      - "traefik.http.routers.logichain-api-http.entrypoints=web"
+      - "traefik.http.routers.logichain-api-http.middlewares=logichain-redirect-https"
+      - "traefik.http.middlewares.logichain-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.logichain-redirect-https.redirectscheme.permanent=true"
+      # Headers de sécurité (cumulé avec helmet côté Node)
+      - "traefik.http.routers.logichain-api.middlewares=logichain-secure-headers"
+      - "traefik.http.middlewares.logichain-secure-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.logichain-secure-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.logichain-secure-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.logichain-secure-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.logichain-secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+
+networks:
+  logichain-internal:
+    driver: bridge
+  traefik_network:
+    external: true
+
+volumes:
+  mongo-data:
+  mongo-config:

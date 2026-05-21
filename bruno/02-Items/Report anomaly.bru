@@ -1,0 +1,26 @@
+meta {
+  name: Report anomaly
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/anomaly
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "location": { "type": "Point", "coordinates": [2.5, 48.95] },
+    "note": "Panne d'alimentation — projecteur 3 ne s'allume plus"
+  }
+}
+
+docs {
+  Anomalie géolocalisée. N'altère pas le statut mais ajoute à l'historique.
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Allocate to event
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/allocate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "eventId": "{{eventId}}"
+  }
+}
+
+docs {
+  Action métier — transition in_stock → allocated.
+  422 si l'item est dans un statut incompatible.
+}

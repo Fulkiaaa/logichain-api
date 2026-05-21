@@ -1,0 +1,26 @@
+meta {
+  name: Scan item (terrain)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/items/{{itemId}}/scan
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "location": { "type": "Point", "coordinates": [2.3522, 48.8566] },
+    "note": "Scan check-in dépôt central"
+  }
+}
+
+docs {
+  Scan terrain — géolocalisation, ajout à l'historique. Pas de transition de statut.
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Health check
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+docs {
+  Vérifie que l'API est en route. Utilisé par Docker/Traefik comme healthcheck.
+  Réponse 200 : { status, service, timestamp }
+}

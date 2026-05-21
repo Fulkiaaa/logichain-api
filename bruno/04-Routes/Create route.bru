@@ -1,0 +1,53 @@
+meta {
+  name: Create route
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/routes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "reference": "RTE-2026-001",
+    "eventId": "{{eventId}}",
+    "transporterId": "transporter-vert-1",
+    "mode": "electric_truck",
+    "plannedDistanceKm": 180,
+    "totalWeightKg": 2500,
+    "stops": [
+      {
+        "sequence": 0,
+        "label": "Dépôt central",
+        "type": "pickup",
+        "location": { "type": "Point", "coordinates": [2.30, 48.80] },
+        "scheduledAt": "2026-05-31T08:00:00.000Z",
+        "itemIds": []
+      },
+      {
+        "sequence": 1,
+        "label": "Site festival",
+        "type": "dropoff",
+        "location": { "type": "Point", "coordinates": [2.50, 48.95] },
+        "scheduledAt": "2026-05-31T12:00:00.000Z",
+        "itemIds": []
+      }
+    ]
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("routeId", res.body.id);
+    if (res.body.stops && res.body.stops[0]) {
+      bru.setEnvVar("stopId", res.body.stops[0].id);
+    }
+  }
+}
