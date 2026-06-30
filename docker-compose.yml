@@ -52,6 +52,9 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://logichain.fulkia.fr}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      # Basic Auth sur /docs et /openapi.json (vide = doc ouverte). Définir dans .env.
+      DOCS_USER: ${DOCS_USER:-}
+      DOCS_PASSWORD: ${DOCS_PASSWORD:-}
     networks:
       - logichain-internal
       - traefik_network
