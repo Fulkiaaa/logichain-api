@@ -1,8 +1,17 @@
-import type { FilterQuery, HydratedDocument, Model, UpdateQuery } from 'mongoose';
+import type { ClientSession, FilterQuery, HydratedDocument, Model, UpdateQuery } from 'mongoose';
 import mongoose from 'mongoose';
 
 import type { BaseEntity } from './BaseEntity';
 import { ConflictError, NotFoundError } from './errors';
+
+/**
+ * Jeton de transaction opaque exposé aux couches Service.
+ *
+ * Volontairement aliasé ici (et non importé de `mongoose` côté Service) pour que
+ * la couche métier reste indépendante de l'ODM : un service reçoit une `TxSession`,
+ * la transmet aux méthodes du repository, mais n'appelle jamais de méthode dessus.
+ */
+export type TxSession = ClientSession;
 
 export interface PaginationOptions {
   page?: number;
@@ -98,25 +107,53 @@ export abstract class BaseRepository<TEntity extends BaseEntity, TRawDoc> {
   }
 
   /**
+   * Exécute un travail dans une transaction MongoDB (ACID).
+   *
+   * Ouvre une session, lance `withTransaction` (commit automatique en cas de
+   * succès, rollback si le callback jette), puis ferme la session. Le replica
+   * set `rs0` est requis pour les transactions multi-documents.
+   *
+   * La couche Service orchestre QUOI rendre atomique ; la mécanique de session
+   * (création, commit, rollback) reste confinée ici, dans la couche d'accès aux
+   * données.
+   */
+  public async withTransaction<T>(work: (session: TxSession) => Promise<T>): Promise<T> {
+    const session = await this.model.db.startSession();
+    try {
+      let result: T;
+      await session.withTransaction(async () => {
+        result = await work(session);
+      });
+      return result!;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  /**
    * Mise à jour atomique avec contrôle de version (verrouillage optimiste).
    * Lance ConflictError si la version attendue ne correspond pas — le client
    * doit alors re-fetch et merger (cas typique sync offline → online).
+   *
+   * Une `session` peut être fournie pour participer à une transaction ACID :
+   * la mise à jour est alors annulée si la transaction échoue.
    */
   protected async updateWithVersion(
     id: string,
     expectedVersion: number,
     update: UpdateQuery<TRawDoc>,
+    session?: TxSession,
   ): Promise<HydratedDocument<TRawDoc>> {
     const doc = await this.model
       .findOneAndUpdate(
         { _id: id, __v: expectedVersion } as FilterQuery<TRawDoc>,
         { ...update, $inc: { __v: 1 } } as UpdateQuery<TRawDoc>,
-        { new: true, runValidators: true },
+        { new: true, runValidators: true, ...(session ? { session } : {}) },
       )
       .exec();
 
     if (!doc) {
-      const current = await this.model.findById(id).exec();
+      const current = await this.model.findById(id).session(session ?? null).exec();
       if (!current) {
         throw new NotFoundError(this.model.modelName, id);
       }

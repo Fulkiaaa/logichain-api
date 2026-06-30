@@ -8,6 +8,7 @@ import { EventController } from './event.controller';
 import { EventRepository } from './event.repository';
 import {
   addZoneSchema,
+  allocateItemsSchema,
   createEventSchema,
   listEventsQuerySchema,
   transitionEventSchema,
@@ -66,5 +67,13 @@ eventRouter.delete(
 );
 
 eventRouter.get('/:id/items', validate({ params: idParamSchema }), controller.listItems);
+
+// Allocation atomique d'un lot d'items à l'événement (transaction ACID, tout-ou-rien).
+eventRouter.post(
+  '/:id/allocate',
+  requireRole('admin', 'logistics_manager'),
+  validate({ params: idParamSchema, body: allocateItemsSchema }),
+  controller.allocateItems,
+);
 
 export { repo as eventRepository, service as eventService };

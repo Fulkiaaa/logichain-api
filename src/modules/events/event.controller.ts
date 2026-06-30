@@ -63,6 +63,23 @@ export class EventController {
     res.status(204).send();
   };
 
+  /**
+   * Allocation atomique d'un lot d'items à l'événement (transaction ACID).
+   * Vérifie d'abord l'existence de l'événement (404), puis délègue l'allocation
+   * tout-ou-rien au ItemService. Composition de deux services au niveau routing.
+   */
+  public allocateItems = async (req: Request, res: Response): Promise<void> => {
+    const eventId = req.params.id!;
+    await this.service.getById(eventId); // 404 si l'événement n'existe pas
+    const { itemIds } = req.body as { itemIds: string[] };
+    const items = await itemService.allocateBatch(eventId, itemIds, req.user!.id);
+    res.status(200).json({
+      eventId,
+      allocated: items.length,
+      items: items.map((i) => i.toJSON()),
+    });
+  };
+
   /** Sous-ressource : items d'un événement. Délègue au ItemService. */
   public listItems = async (req: Request, res: Response): Promise<void> => {
     const { page, limit } = req.query as Record<string, string | undefined>;

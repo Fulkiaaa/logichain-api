@@ -83,6 +83,44 @@ export class ItemService {
     return this.repo.save(item);
   }
 
+  /**
+   * Alloue atomiquement un lot d'items à un événement (transaction ACID).
+   *
+   * Tout-ou-rien : si un seul item est introuvable (404), dans un état non
+   * allouable (422) ou en conflit de version (409), la transaction est annulée
+   * et AUCUN item du lot n'est alloué. Indispensable lors des phases de montage
+   * où l'on réserve d'un coup tout le matériel d'un secteur.
+   *
+   * La couche métier décide du périmètre atomique ; la mécanique de session est
+   * encapsulée dans le repository. `session` est traitée comme un jeton opaque.
+   */
+  public async allocateBatch(
+    eventId: string,
+    itemIds: string[],
+    operatorId: string,
+  ): Promise<ItemEntity[]> {
+    const uniqueIds = [...new Set(itemIds)];
+    if (uniqueIds.length === 0) {
+      throw new BusinessRuleError(
+        'item.empty_allocation',
+        'La liste d\'items à allouer ne peut pas être vide',
+      );
+    }
+
+    return this.repo.withTransaction(async (session) => {
+      const allocated: ItemEntity[] = [];
+      for (const id of uniqueIds) {
+        const item = await this.repo.findByIdInSession(id, session);
+        if (!item) {
+          throw new NotFoundError('Item', id);
+        }
+        item.allocateTo(eventId, operatorId);
+        allocated.push(await this.repo.saveInSession(item, session));
+      }
+      return allocated;
+    });
+  }
+
   public async startTransit(
     id: string,
     operatorId: string,

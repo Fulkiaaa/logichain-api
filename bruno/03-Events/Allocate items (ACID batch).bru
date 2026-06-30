@@ -1,0 +1,39 @@
+meta {
+  name: Allocate items (ACID batch)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/events/{{eventId}}/allocate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "itemIds": ["{{itemId}}", "{{itemId2}}"]
+  }
+}
+
+docs {
+  Allocation atomique d'un LOT d'items à l'événement — transaction ACID (tout-ou-rien).
+
+  Réservé aux rôles admin / logistics_manager.
+
+  Comportement :
+    200 → tous les items du lot sont passés in_stock → allocated, en un seul commit.
+    422 → un item n'est pas dans un statut allouable ; AUCUN item n'est alloué (rollback).
+    404 → un item (ou l'événement) est introuvable ; rollback du lot entier.
+    409 → conflit de version (__v) sur un item ; rollback du lot entier.
+
+  Le verrouillage optimiste reste actif dans la transaction (isolation).
+  Requiert MongoDB en replica set (rs0).
+
+  Démo du rollback : mettre {{itemId2}} sur un item au statut terminal (lost)
+  → 422, et {{itemId}} reste in_stock (rien n'a été committé).
+}

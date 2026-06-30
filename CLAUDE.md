@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 LogiChain API — API REST (Node 20 + TypeScript + Express + MongoDB/Mongoose) pour une plateforme logistique événementielle (projet académique MP3). Le code, les commentaires et les messages d'erreur sont en français.
 
 ## Commandes

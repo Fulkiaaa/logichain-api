@@ -1,6 +1,11 @@
-import mongoose, { type FilterQuery } from 'mongoose';
+import mongoose, { type FilterQuery, type UpdateQuery } from 'mongoose';
 
-import { BaseRepository, type PaginatedResult, type PaginationOptions } from '@/core/BaseRepository';
+import {
+  BaseRepository,
+  type PaginatedResult,
+  type PaginationOptions,
+  type TxSession,
+} from '@/core/BaseRepository';
 
 import { ItemEntity, type ItemProps } from './item.entity';
 import { ItemModel, type ItemDoc, type ItemRaw, type ItemStatus, type ItemCategory } from './item.model';
@@ -68,6 +73,15 @@ export class ItemRepository extends BaseRepository<ItemEntity, ItemRaw> {
     return doc ? this.toEntity(doc) : null;
   }
 
+  /** Charge un item au sein d'une transaction (lecture liée à la session). */
+  public async findByIdInSession(id: string, session: TxSession): Promise<ItemEntity | null> {
+    if (!mongoose.isValidObjectId(id)) {
+      return null;
+    }
+    const doc = await this.model.findById(id).session(session).exec();
+    return doc ? this.toEntity(doc) : null;
+  }
+
   public async listWithFilters(
     filters: ItemFilters,
     options: PaginationOptions,
@@ -97,13 +111,10 @@ export class ItemRepository extends BaseRepository<ItemEntity, ItemRaw> {
     return this.toEntity(doc);
   }
 
-  /**
-   * Persiste l'état complet d'une entité Item avec contrôle de version.
-   * Lance ConflictError si la version locale est obsolète (sync offline).
-   */
-  public async save(entity: ItemEntity): Promise<ItemEntity> {
+  /** Construit le `$set` de persistance d'une entité Item (état mutable). */
+  private buildUpdate(entity: ItemEntity): UpdateQuery<ItemRaw> {
     const json = entity.toJSON();
-    const update = {
+    return {
       $set: {
         label: json.label,
         status: json.status,
@@ -112,7 +123,29 @@ export class ItemRepository extends BaseRepository<ItemEntity, ItemRaw> {
         history: json.history.map((h) => ({ ...h, at: new Date(h.at) })),
       },
     };
-    const doc = await this.updateWithVersion(entity.id, entity.version, update);
+  }
+
+  /**
+   * Persiste l'état complet d'une entité Item avec contrôle de version.
+   * Lance ConflictError si la version locale est obsolète (sync offline).
+   */
+  public async save(entity: ItemEntity): Promise<ItemEntity> {
+    const doc = await this.updateWithVersion(entity.id, entity.version, this.buildUpdate(entity));
+    return this.toEntity(doc);
+  }
+
+  /**
+   * Variante transactionnelle de `save` : la mise à jour participe à la
+   * transaction `session` et sera annulée si celle-ci échoue. Le verrouillage
+   * optimiste (`__v`) reste actif, garantissant l'isolation entre concurrents.
+   */
+  public async saveInSession(entity: ItemEntity, session: TxSession): Promise<ItemEntity> {
+    const doc = await this.updateWithVersion(
+      entity.id,
+      entity.version,
+      this.buildUpdate(entity),
+      session,
+    );
     return this.toEntity(doc);
   }
 

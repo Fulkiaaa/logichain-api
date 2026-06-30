@@ -55,6 +55,11 @@ export const transitionEventSchema = z.object({
 
 export const addZoneSchema = zoneInputSchema;
 
+/** Allocation atomique d'un lot d'items à un événement (transaction ACID). */
+export const allocateItemsSchema = z.object({
+  itemIds: z.array(objectIdSchema).min(1, 'Au moins un item requis').max(200),
+});
+
 export const zoneIdParamSchema = idParamSchema.extend({ zoneId: objectIdSchema });
 
 export const listEventsQuerySchema = z.object({
