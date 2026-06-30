@@ -16,6 +16,11 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
 
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
+
+  // Protège /docs et /openapi.json par Basic Auth. Si l'un des deux est absent,
+  // la doc reste ouverte (pratique en dev) — à définir impérativement en prod.
+  DOCS_USER: z.string().min(1).optional(),
+  DOCS_PASSWORD: z.string().min(1).optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

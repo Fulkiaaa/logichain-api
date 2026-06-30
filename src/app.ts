@@ -1,5 +1,6 @@
 import 'express-async-errors';
 
+import { apiReference } from '@scalar/express-api-reference';
 import cors from 'cors';
 import express, { type Application } from 'express';
 import helmet from 'helmet';
@@ -7,6 +8,8 @@ import pinoHttp from 'pino-http';
 
 import { env } from '@/config/env';
 import { logger } from '@/core/logger';
+import { openApiDocument } from '@/docs/openapi';
+import { docsBasicAuth } from '@/middlewares/docs-auth.middleware';
 import { errorHandler, notFoundHandler } from '@/middlewares/error-handler.middleware';
 import { authRouter } from '@/modules/auth/auth.routes';
 import { dashboardRouter } from '@/modules/dashboard/dashboard.routes';
@@ -31,6 +34,22 @@ export function buildApp(): Application {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'logichain-api', timestamp: new Date().toISOString() });
   });
+
+  // Documentation interactive — OpenAPI généré depuis les schémas Zod.
+  // Le spec brut est exposé en JSON ; Scalar le rend en UI sur /docs.
+  app.get('/openapi.json', docsBasicAuth, (_req, res) => {
+    res.json(openApiDocument);
+  });
+  app.use(
+    '/docs',
+    docsBasicAuth,
+    (_req, res, next) => {
+      // Scalar charge son bundle via CDN + styles inline → on lève la CSP stricte ici.
+      res.removeHeader('Content-Security-Policy');
+      next();
+    },
+    apiReference({ content: openApiDocument }),
+  );
 
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/items', itemRouter);
