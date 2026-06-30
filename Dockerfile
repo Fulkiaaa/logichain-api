@@ -14,7 +14,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY tsconfig.json ./
 COPY src ./src
-RUN npx tsc -p tsconfig.json
+# tsc compile, puis tsc-alias réécrit les alias @/* en chemins relatifs
+# (sans cette 2e étape, dist/ garde des require("@/...") non résolus → crash au boot)
+RUN npx tsc -p tsconfig.json && npx tsc-alias -p tsconfig.json
 
 # ---------- Stage 3 : prod deps only -----------------------------------------
 FROM node:20-alpine AS prod-deps
