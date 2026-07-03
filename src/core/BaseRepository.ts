@@ -1,8 +1,28 @@
-import type { ClientSession, FilterQuery, HydratedDocument, Model, UpdateQuery } from 'mongoose';
+import type { ChangeStream } from 'mongodb';
+import type {
+  ClientSession,
+  FilterQuery,
+  HydratedDocument,
+  Model,
+  UpdateQuery,
+} from 'mongoose';
 import mongoose from 'mongoose';
 
 import type { BaseEntity } from './BaseEntity';
 import { ConflictError, NotFoundError } from './errors';
+
+/**
+ * Changement observé sur une collection via Change Stream, déjà traduit en
+ * objet du domaine (Entity) — la couche Service ne voit jamais le document
+ * Mongo brut, conformément au découpage N-Tier.
+ */
+export interface EntityChange<TEntity> {
+  operationType: 'insert' | 'update' | 'replace' | 'delete';
+  entity: TEntity | null; // null pour un delete (ou fullDocument disparu)
+  documentId: string;
+  /** Champs réellement modifiés (updates uniquement) — sert à dédupliquer. */
+  updatedFields?: string[];
+}
 
 /**
  * Jeton de transaction opaque exposé aux couches Service.
@@ -138,6 +158,48 @@ export abstract class BaseRepository<TEntity extends BaseEntity, TRawDoc> {
    * Une `session` peut être fournie pour participer à une transaction ACID :
    * la mise à jour est alors annulée si la transaction échoue.
    */
+  /**
+   * Ouvre un Change Stream MongoDB sur la collection et traduit chaque
+   * changement en `EntityChange` du domaine (via `toEntity`), avant de le
+   * passer au callback. Le replica set `rs0` est requis (déjà en place).
+   *
+   * Confine l'accès à Mongoose dans le repository : les couches supérieures
+   * (Service temps réel) reçoivent des Entities, jamais des documents bruts.
+   *
+   * `fullDocument: 'updateLookup'` recharge le document complet après update,
+   * indispensable pour reconstruire l'entité.
+   */
+  public watchEntities(onChange: (change: EntityChange<TEntity>) => void): ChangeStream {
+    const stream = this.model.watch([], { fullDocument: 'updateLookup' });
+
+    stream.on('change', (raw: unknown) => {
+      const change = raw as {
+        operationType: string;
+        fullDocument?: unknown;
+        documentKey?: { _id?: unknown };
+        updateDescription?: { updatedFields?: Record<string, unknown> };
+      };
+      const documentId = String(change.documentKey?._id ?? '');
+      const op = change.operationType;
+
+      if (op === 'delete') {
+        onChange({ operationType: 'delete', entity: null, documentId });
+        return;
+      }
+      if (op === 'insert' || op === 'update' || op === 'replace') {
+        const entity = change.fullDocument
+          ? this.toEntity(this.model.hydrate(change.fullDocument as Partial<TRawDoc>))
+          : null;
+        const updatedFields = change.updateDescription?.updatedFields
+          ? Object.keys(change.updateDescription.updatedFields)
+          : undefined;
+        onChange({ operationType: op, entity, documentId, ...(updatedFields ? { updatedFields } : {}) });
+      }
+    });
+
+    return stream;
+  }
+
   protected async updateWithVersion(
     id: string,
     expectedVersion: number,

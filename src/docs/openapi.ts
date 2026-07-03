@@ -38,6 +38,11 @@ import {
   updateItemSchema,
 } from '@/modules/items/item.schemas';
 import {
+  NOTIFICATION_SEVERITIES,
+  NOTIFICATION_TYPES,
+} from '@/modules/notifications/notification.model';
+import { listNotificationsQuerySchema } from '@/modules/notifications/notification.schemas';
+import {
   addItemsToStopSchema,
   completeStopSchema,
   createRouteSchema,
@@ -364,6 +369,27 @@ registry.registerPath({
   security: SECURED, request: { params: idParamSchema },
   responses: { 200: { description: 'Rapport carbone', ...json(z.record(z.string(), z.unknown())) }, 404: err('Introuvable') },
 });
+const routeLatencySchema = z
+  .object({
+    route: z.string(),
+    method: z.string(),
+    count: z.number().int(),
+    avgMs: z.number(),
+    p95Ms: z.number(),
+    maxMs: z.number(),
+  })
+  .openapi('RouteLatency');
+
+registry.registerPath({
+  method: 'get', path: '/api/v1/dashboard/metrics', tags: ['Dashboard'],
+  summary: 'Latences par route (Time Series, admin)',
+  description: 'Agrégation des latences HTTP sur la dernière heure depuis la collection Time Series de monitoring.',
+  security: SECURED,
+  responses: {
+    200: { description: 'Latences agrégées', ...json(z.object({ windowMinutes: z.number().int(), routes: z.array(routeLatencySchema) })) },
+    403: err('Rôle insuffisant'),
+  },
+});
 registry.registerPath({
   method: 'get', path: '/api/v1/dashboard/emission-factors', tags: ['Dashboard'], summary: 'Facteurs d\'émission (cache ADEME)',
   security: SECURED, responses: { 200: { description: 'Snapshot des facteurs', ...json(z.record(z.string(), z.unknown())) } },
@@ -380,6 +406,51 @@ registry.registerPath({
     200: { description: 'Allocation sûre (accordée)', ...json(z.record(z.string(), z.unknown())) },
     422: { description: 'État non sûr (refusée)', ...json(z.record(z.string(), z.unknown())) },
   },
+});
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS (temps réel)
+// ---------------------------------------------------------------------------
+const notificationSchema = z
+  .object({
+    id: z.string(),
+    version: z.number().int(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    type: z.enum(NOTIFICATION_TYPES),
+    severity: z.enum(NOTIFICATION_SEVERITIES),
+    title: z.string(),
+    message: z.string(),
+    eventId: z.string().nullable(),
+    itemId: z.string().nullable(),
+    audience: z.array(z.enum(USER_ROLES)),
+    read: z.boolean(),
+  })
+  .openapi('Notification');
+
+registry.registerPath({
+  method: 'get', path: '/api/v1/notifications/stream', tags: ['Notifications'],
+  summary: 'Flux temps réel (Server-Sent Events)',
+  description:
+    'Ouvre un flux SSE. Authentification par header Bearer **ou** paramètre `?token=` ' +
+    '(pour `EventSource`). Émet un event `notification` à chaque incident critique ' +
+    '(anomalie, perte d\'équipement, annulation d\'événement), détecté en temps réel ' +
+    'via les **Change Streams** MongoDB.',
+  security: SECURED,
+  responses: {
+    200: { description: 'Flux SSE ouvert (text/event-stream)', content: { 'text/event-stream': { schema: z.string() } } },
+    401: err('Non authentifié'),
+  },
+});
+registry.registerPath({
+  method: 'get', path: '/api/v1/notifications', tags: ['Notifications'], summary: 'Lister les notifications',
+  security: SECURED, request: { query: listNotificationsQuerySchema },
+  responses: { 200: { description: 'Liste paginée', ...json(paginated(notificationSchema, 'NotificationPage')) } },
+});
+registry.registerPath({
+  method: 'post', path: '/api/v1/notifications/{id}/read', tags: ['Notifications'], summary: 'Marquer comme lue',
+  security: SECURED, request: { params: idParamSchema },
+  responses: { 200: { description: 'Notification lue', ...json(notificationSchema) }, 404: err('Introuvable') },
 });
 
 // ---------------------------------------------------------------------------
@@ -413,6 +484,7 @@ export const openApiDocument = generator.generateDocument({
     { name: 'Events', description: 'Événements, zones, allocation' },
     { name: 'Routes', description: 'Feuilles de route transporteurs' },
     { name: 'Dashboard', description: 'KPI, empreinte carbone, allocation sûre' },
+    { name: 'Notifications', description: 'Alertes temps réel (SSE + Change Streams)' },
     { name: 'Health', description: 'Supervision' },
   ],
 });

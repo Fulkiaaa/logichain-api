@@ -284,10 +284,6 @@ pendant les phases de montage/démontage simultané.
   rejouera POST `/items/:id/scan` au retour réseau ; les 409 Conflict
   déclencheront un merge côté client
 - **Dashboard front** : consommera `/api/v1/dashboard/events/:id/carbon-footprint`
-- **Time Series** : collection MongoDB Time Series pour le monitoring des
-  latences (ajout simple via `timeseries: { timeField, metaField }` dans un futur `metric.model.ts`)
-- **Tests de charge** : k6 ou autocannon ciblant `/items/:id/scan` pour
-  simuler les pics de scans massifs au montage/démontage
 
 ---
 

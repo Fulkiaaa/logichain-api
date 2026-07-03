@@ -7,6 +7,7 @@ import { eventRepository } from '@/modules/events/event.routes';
 import { ITEM_CATEGORIES } from '@/modules/items/item.model';
 import { itemRepository } from '@/modules/items/item.routes';
 import { idParamSchema, objectIdSchema } from '@/modules/items/item.schemas';
+import { metricRepository } from '@/modules/monitoring/metric.repository';
 import { routeRepository } from '@/modules/routes/route.routes';
 import { ademeFactorService } from '@/services/AdemeFactorService';
 import { CarbonFootprintService } from '@/services/CarbonFootprintService';
@@ -27,6 +28,16 @@ dashboardRouter.get(
     res.status(200).json(report);
   },
 );
+
+/**
+ * Latences agrégées par route sur la dernière heure, lues depuis la collection
+ * Time Series de monitoring (count / moyenne / p95 / max). Réservé aux admins :
+ * c'est une métrique d'exploitation, pas une donnée métier.
+ */
+dashboardRouter.get('/metrics', requireRole('admin'), async (_req, res) => {
+  const routes = await metricRepository.summary(60);
+  res.status(200).json({ windowMinutes: 60, routes });
+});
 
 /**
  * Expose l'état courant du cache des facteurs ADEME — pour debug, audit

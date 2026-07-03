@@ -33,6 +33,32 @@ export const requireAuth: RequestHandler = (req, _res, next) => {
   }
 };
 
+/**
+ * Variante d'authentification pour le flux SSE : accepte le token soit via le
+ * header `Authorization: Bearer`, soit via `?token=` (car l'API navigateur
+ * `EventSource` ne permet pas d'envoyer d'en-tête personnalisé).
+ */
+export const requireAuthFlexible: RequestHandler = (req, _res, next) => {
+  let token: string | undefined;
+  const header = req.header('authorization');
+  if (header?.startsWith('Bearer ')) {
+    token = header.slice('Bearer '.length).trim();
+  } else if (typeof req.query.token === 'string' && req.query.token.length > 0) {
+    token = req.query.token;
+  }
+
+  if (!token) {
+    throw new UnauthorizedError('Token Bearer ou paramètre ?token= requis');
+  }
+  try {
+    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
+    next();
+  } catch {
+    throw new UnauthorizedError('Token invalide ou expiré');
+  }
+};
+
 export const requireRole =
   (...allowed: UserRole[]): RequestHandler =>
   (req, _res, next) => {

@@ -17,6 +17,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:load": "k6 run tests/load/scan.load.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

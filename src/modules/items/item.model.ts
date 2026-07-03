@@ -108,6 +108,18 @@ itemSchema.index({ eventId: 1, status: 1 });
 itemSchema.index({ category: 1, status: 1 });
 itemSchema.index({ location: '2dsphere' });
 
+/**
+ * Index PARTIEL : seuls les items perdus sont indexés (`partialFilterExpression`).
+ * C'est un sous-ensemble minuscule mais « chaud » — le dashboard interroge
+ * fréquemment les items perdus pour la détection d'incidents. L'index reste
+ * ainsi bien plus petit qu'un index plein sur `status`, tout en accélérant
+ * exactement cette requête. Trié par récence pour lister les pertes récentes.
+ */
+itemSchema.index(
+  { eventId: 1, updatedAt: -1 },
+  { partialFilterExpression: { status: 'lost' }, name: 'lost_items_by_event' },
+);
+
 export type ItemRaw = InferSchemaType<typeof itemSchema>;
 export type ItemDoc = HydratedDocument<ItemRaw>;
 export const ItemModel = model<ItemRaw>('Item', itemSchema);

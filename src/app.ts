@@ -11,10 +11,12 @@ import { logger } from '@/core/logger';
 import { openApiDocument } from '@/docs/openapi';
 import { docsBasicAuth } from '@/middlewares/docs-auth.middleware';
 import { errorHandler, notFoundHandler } from '@/middlewares/error-handler.middleware';
+import { requestMetrics } from '@/middlewares/metrics.middleware';
 import { authRouter } from '@/modules/auth/auth.routes';
 import { dashboardRouter } from '@/modules/dashboard/dashboard.routes';
 import { eventRouter } from '@/modules/events/event.routes';
 import { itemRouter } from '@/modules/items/item.routes';
+import { notificationRouter } from '@/modules/notifications/notification.routes';
 import { routeRouter } from '@/modules/routes/route.routes';
 
 export function buildApp(): Application {
@@ -30,6 +32,9 @@ export function buildApp(): Application {
   );
   app.use(express.json({ limit: '1mb' }));
   app.use(pinoHttp({ logger }));
+
+  // Monitoring des latences → collection Time Series (écriture bufferisée).
+  app.use(requestMetrics);
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'logichain-api', timestamp: new Date().toISOString() });
@@ -56,6 +61,7 @@ export function buildApp(): Application {
   app.use('/api/v1/events', eventRouter);
   app.use('/api/v1/routes', routeRouter);
   app.use('/api/v1/dashboard', dashboardRouter);
+  app.use('/api/v1/notifications', notificationRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
