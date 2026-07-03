@@ -12,6 +12,7 @@ import { openApiDocument } from '@/docs/openapi';
 import { docsBasicAuth } from '@/middlewares/docs-auth.middleware';
 import { errorHandler, notFoundHandler } from '@/middlewares/error-handler.middleware';
 import { requestMetrics } from '@/middlewares/metrics.middleware';
+import { apiLimiter } from '@/middlewares/rate-limit.middleware';
 import { authRouter } from '@/modules/auth/auth.routes';
 import { dashboardRouter } from '@/modules/dashboard/dashboard.routes';
 import { eventRouter } from '@/modules/events/event.routes';
@@ -23,6 +24,9 @@ export function buildApp(): Application {
   const app = express();
 
   app.disable('x-powered-by');
+  // Derrière Traefik (prod) : fait confiance au 1er proxy pour que le rate
+  // limiter et les logs voient l'IP réelle du client via X-Forwarded-For.
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(
     cors({
@@ -55,6 +59,9 @@ export function buildApp(): Application {
     },
     apiReference({ content: openApiDocument }),
   );
+
+  // Rate limiting global sur l'API (health/docs restent hors périmètre).
+  app.use('/api/v1', apiLimiter);
 
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/items', itemRouter);

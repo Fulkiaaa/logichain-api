@@ -17,6 +17,13 @@ const envSchema = z.object({
 
   BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 
+  // Rate limiting. Limiteur global sur /api/v1 + limiteur strict sur le login
+  // (anti brute-force). Fenêtres en millisecondes, max = requêtes par fenêtre.
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(1000),
+  AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(5 * 60 * 1000),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+
   // Protège /docs et /openapi.json par Basic Auth. Vide ou absent = doc ouverte
   // (pratique en dev) — à définir impérativement en prod. On accepte la chaîne
   // vide car docker-compose injecte `${DOCS_USER:-}` (vide) quand non défini.

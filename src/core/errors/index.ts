@@ -5,3 +5,4 @@ export { ConflictError } from './ConflictError';
 export { BusinessRuleError } from './BusinessRuleError';
 export { UnauthorizedError } from './UnauthorizedError';
 export { ForbiddenError } from './ForbiddenError';
+export { RateLimitError } from './RateLimitError';
