@@ -12,7 +12,12 @@ import {
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 
-import { loginSchema, refreshSchema, registerSchema } from '@/modules/auth/auth.schemas';
+import {
+  changePasswordSchema,
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+} from '@/modules/auth/auth.schemas';
 import { USER_ROLES } from '@/modules/auth/user.model';
 import {
   addZoneSchema,
@@ -95,6 +100,7 @@ const userSchema = z
     fullName: z.string(),
     role: z.enum(USER_ROLES),
     active: z.boolean(),
+    mustChangePassword: z.boolean(),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
@@ -186,6 +192,22 @@ registry.registerPath({
   method: 'post', path: '/api/v1/auth/register', tags: ['Auth'], summary: 'Créer un utilisateur (admin)',
   security: SECURED, request: { body: json(registerSchema) },
   responses: { 201: { description: 'Utilisateur créé', ...json(userSchema) }, 401: err('Non authentifié'), 403: err('Rôle insuffisant'), 409: err('Email déjà utilisé') },
+});
+registry.registerPath({
+  method: 'patch', path: '/api/v1/auth/password', tags: ['Auth'],
+  summary: 'Changer son mot de passe (obligatoire à la première connexion)',
+  description:
+    "Un compte créé par un admin porte un mot de passe temporaire : toutes les " +
+    'routes métier lui répondent 403 PASSWORD_CHANGE_REQUIRED tant qu\'il ne l\'a ' +
+    'pas remplacé ici. La réponse contient une NOUVELLE paire de jetons — ' +
+    "l'ancienne porte encore le drapeau et resterait bloquée.",
+  security: SECURED, request: { body: json(changePasswordSchema) },
+  responses: {
+    200: { description: 'Mot de passe changé, jetons renouvelés', ...json(tokenSchema) },
+    400: err('Validation'),
+    401: err('Non authentifié ou mot de passe actuel invalide'),
+    422: err('Le nouveau mot de passe est identique à l\'actuel'),
+  },
 });
 registry.registerPath({
   method: 'get', path: '/api/v1/auth/me', tags: ['Auth'], summary: 'Profil courant',

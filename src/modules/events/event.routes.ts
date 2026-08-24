@@ -1,6 +1,10 @@
 import { Router } from 'express';
 
-import { requireAuth, requireRole } from '@/middlewares/auth.middleware';
+import {
+  requireAuth,
+  requirePasswordChanged,
+  requireRole,
+} from '@/middlewares/auth.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 import { idParamSchema } from '@/modules/items/item.schemas';
 
@@ -24,6 +28,7 @@ const controller = new EventController(service);
 export const eventRouter = Router();
 
 eventRouter.use(requireAuth);
+eventRouter.use(requirePasswordChanged);
 
 eventRouter.get('/', validate({ query: listEventsQuerySchema }), controller.list);
 eventRouter.post(

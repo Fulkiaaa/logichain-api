@@ -57,9 +57,24 @@ async function main(): Promise<void> {
     { email: 'transports-vert@logichain.fr', fullName: 'Paul Rivière (Transports Vert)', role: 'transporter' },
     { email: 'ecofret@logichain.fr',         fullName: 'Lucie Bernard (EcoFret)',        role: 'transporter' },
   ];
-  const users = await UserModel.insertMany(
-    usersSpec.map((u) => ({ ...u, passwordHash: hash, active: true })),
-  );
+
+  /**
+   * Compte de démonstration du parcours « mot de passe temporaire ».
+   *
+   * Isolé des 7 comptes ci-dessus, qui restent connectables directement : une
+   * démo doit rester fluide. Celui-ci sert à montrer au jury ce qui se passe
+   * quand un admin vient de créer un compte.
+   */
+  const TEMP_USER = {
+    email: 'nouvelle-recrue@logichain.fr',
+    fullName: 'Camille Roux (nouvelle recrue)',
+    role: 'field_agent',
+  };
+
+  const users = await UserModel.insertMany([
+    ...usersSpec.map((u) => ({ ...u, passwordHash: hash, active: true, mustChangePassword: false })),
+    { ...TEMP_USER, passwordHash: hash, active: true, mustChangePassword: true },
+  ]);
   const byEmail = Object.fromEntries(users.map((u) => [u.email, String(u._id)]));
   const managerId = byEmail['responsable@logichain.fr']!;
   const agents = [byEmail['sofia@logichain.fr']!, byEmail['yanis@logichain.fr']!, byEmail['ines@logichain.fr']!];
@@ -195,6 +210,8 @@ async function main(): Promise<void> {
   console.log('Routes       : 3 (truck completed · electric_truck in_progress · rail planned)');
   console.log('\nComptes :');
   usersSpec.forEach((u) => console.log(`  ${u.role.padEnd(18)} ${u.email}`));
+  console.log(`  ${TEMP_USER.role.padEnd(18)} ${TEMP_USER.email}  ← mot de passe TEMPORAIRE`);
+  console.log('    (ce compte doit changer son mot de passe à la première connexion)');
 
   await mongoose.disconnect();
 }

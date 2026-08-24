@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { requireAuth } from '@/middlewares/auth.middleware';
+import { requireAuth, requirePasswordChanged } from '@/middlewares/auth.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 
 import { ItemController } from './item.controller';
@@ -26,6 +26,7 @@ const controller = new ItemController(service);
 export const itemRouter = Router();
 
 itemRouter.use(requireAuth);
+itemRouter.use(requirePasswordChanged);
 
 itemRouter.get('/', validate({ query: listItemsQuerySchema }), controller.list);
 itemRouter.post('/', validate({ body: createItemSchema }), controller.create);

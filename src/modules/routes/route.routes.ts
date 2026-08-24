@@ -1,6 +1,10 @@
 import { Router } from 'express';
 
-import { requireAuth, requireRole } from '@/middlewares/auth.middleware';
+import {
+  requireAuth,
+  requirePasswordChanged,
+  requireRole,
+} from '@/middlewares/auth.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 import { idParamSchema } from '@/modules/items/item.schemas';
 
@@ -24,6 +28,7 @@ const controller = new RouteController(service);
 export const routeRouter = Router();
 
 routeRouter.use(requireAuth);
+routeRouter.use(requirePasswordChanged);
 
 routeRouter.get('/', validate({ query: listRoutesQuerySchema }), controller.list);
 routeRouter.post(

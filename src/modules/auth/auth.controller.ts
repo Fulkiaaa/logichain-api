@@ -22,6 +22,24 @@ export class AuthController {
     res.status(200).json(result);
   };
 
+  /**
+   * Le titulaire remplace son mot de passe temporaire. L'identité vient du JWT
+   * (req.user), jamais du corps de la requête : sinon n'importe quel compte
+   * connecté pourrait changer le mot de passe d'un autre.
+   */
+  public changePassword = async (req: Request, res: Response): Promise<void> => {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword: string;
+      newPassword: string;
+    };
+    const result = await this.service.changePassword(
+      req.user!.id,
+      currentPassword,
+      newPassword,
+    );
+    res.status(200).json(result);
+  };
+
   public me = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(req.user);
   };

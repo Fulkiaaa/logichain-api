@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 
 import { env } from '@/config/env';
-import { ConflictError, UnauthorizedError } from '@/core/errors';
+import { BusinessRuleError, ConflictError, UnauthorizedError } from '@/core/errors';
 import type { JwtPayload } from '@/middlewares/auth.middleware';
 
 import type { UserEntity } from './user.entity';
@@ -35,6 +35,9 @@ export class AuthService {
       passwordHash,
       fullName: input.fullName,
       role: input.role ?? 'field_agent',
+      // Un mot de passe choisi par l'admin n'est jamais définitif : son
+      // titulaire devra le remplacer avant d'accéder à quoi que ce soit.
+      mustChangePassword: true,
     });
   }
 
@@ -80,14 +83,59 @@ export class AuthService {
     };
   }
 
+  /**
+   * Remplacement du mot de passe par son titulaire (identifié par le JWT).
+   *
+   * Renvoie une paire de jetons NEUVE : l'ancienne porte encore
+   * `mustChangePassword: true` et laisserait le compte bloqué par
+   * `requirePasswordChanged` jusqu'à son expiration.
+   */
+  public async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<LoginResult> {
+    const raw = await this.users.findRawByIdWithHash(userId);
+    if (!raw || !raw.active) {
+      throw new UnauthorizedError();
+    }
+    const ok = await bcrypt.compare(currentPassword, raw.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedError('Mot de passe actuel invalide');
+    }
+    if (await bcrypt.compare(newPassword, raw.passwordHash)) {
+      throw new BusinessRuleError(
+        'password.must_differ',
+        'Le nouveau mot de passe doit être différent de l\'actuel',
+      );
+    }
+    const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
+    const user = await this.users.updatePassword(userId, passwordHash);
+    return {
+      token: this.signAccessToken(user),
+      refreshToken: this.signRefreshToken(user),
+      user: user.toJSON(),
+    };
+  }
+
   private signAccessToken(user: UserEntity): string {
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword,
+    };
     const opts: SignOptions = { expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'] };
     return jwt.sign(payload, env.JWT_SECRET, opts);
   }
 
   private signRefreshToken(user: UserEntity): string {
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword,
+    };
     const opts: SignOptions = { expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'] };
     return jwt.sign(payload, env.JWT_SECRET, opts);
   }

@@ -1,6 +1,10 @@
 import { Router } from 'express';
 
-import { requireAuth, requireAuthFlexible } from '@/middlewares/auth.middleware';
+import {
+  requireAuth,
+  requireAuthFlexible,
+  requirePasswordChanged,
+} from '@/middlewares/auth.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 import { eventRepository } from '@/modules/events/event.routes';
 import { itemRepository } from '@/modules/items/item.routes';
@@ -20,9 +24,10 @@ export const notificationRouter = Router();
 
 // Flux SSE : auth flexible (Bearer OU ?token=). Déclaré AVANT le requireAuth
 // global pour ne pas exiger le header sur EventSource.
-notificationRouter.get('/stream', requireAuthFlexible, controller.stream);
+notificationRouter.get('/stream', requireAuthFlexible, requirePasswordChanged, controller.stream);
 
 notificationRouter.use(requireAuth);
+notificationRouter.use(requirePasswordChanged);
 notificationRouter.get('/', validate({ query: listNotificationsQuerySchema }), controller.list);
 notificationRouter.post('/:id/read', validate({ params: idParamSchema }), controller.markRead);
 

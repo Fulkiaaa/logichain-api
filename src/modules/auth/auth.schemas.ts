@@ -18,5 +18,11 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
+  newPassword: z.string().min(8, 'Au moins 8 caractères').max(128),
+});
+
 export type RegisterPayload = z.infer<typeof registerSchema>;
+export type ChangePasswordPayload = z.infer<typeof changePasswordSchema>;
 export type LoginPayload = z.infer<typeof loginSchema>;

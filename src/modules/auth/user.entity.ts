@@ -7,6 +7,7 @@ export interface UserProps extends BaseEntityProps {
   fullName: string;
   role: UserRole;
   active: boolean;
+  mustChangePassword: boolean;
 }
 
 export interface UserJSON extends BaseEntityJSON {
@@ -14,6 +15,7 @@ export interface UserJSON extends BaseEntityJSON {
   fullName: string;
   role: UserRole;
   active: boolean;
+  mustChangePassword: boolean;
 }
 
 export class UserEntity extends BaseEntity {
@@ -25,12 +27,15 @@ export class UserEntity extends BaseEntity {
 
   private _active: boolean;
 
+  private _mustChangePassword: boolean;
+
   constructor(props: UserProps) {
     super(props);
     this._email = props.email;
     this._fullName = props.fullName;
     this._role = props.role;
     this._active = props.active;
+    this._mustChangePassword = props.mustChangePassword;
   }
 
   public get email(): string {
@@ -45,6 +50,9 @@ export class UserEntity extends BaseEntity {
   public get active(): boolean {
     return this._active;
   }
+  public get mustChangePassword(): boolean {
+    return this._mustChangePassword;
+  }
 
   public deactivate(): void {
     this._active = false;
@@ -53,6 +61,15 @@ export class UserEntity extends BaseEntity {
 
   public activate(): void {
     this._active = true;
+    this.touch();
+  }
+
+  /**
+   * Le titulaire a remplacé lui-même le mot de passe temporaire : le compte
+   * retrouve l'accès aux routes métier.
+   */
+  public markPasswordChanged(): void {
+    this._mustChangePassword = false;
     this.touch();
   }
 
@@ -73,6 +90,7 @@ export class UserEntity extends BaseEntity {
       fullName: this._fullName,
       role: this._role,
       active: this._active,
+      mustChangePassword: this._mustChangePassword,
     };
   }
 }

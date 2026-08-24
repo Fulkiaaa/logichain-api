@@ -1,12 +1,21 @@
 import { Router } from 'express';
 
-import { requireAuth, requireRole } from '@/middlewares/auth.middleware';
+import {
+  requireAuth,
+  requirePasswordChanged,
+  requireRole,
+} from '@/middlewares/auth.middleware';
 import { loginLimiter } from '@/middlewares/rate-limit.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { loginSchema, refreshSchema, registerSchema } from './auth.schemas';
+import {
+  changePasswordSchema,
+  loginSchema,
+  refreshSchema,
+  registerSchema,
+} from './auth.schemas';
 import { UserRepository } from './user.repository';
 
 const userRepo = new UserRepository();
@@ -21,11 +30,25 @@ authRouter.post('/refresh', validate({ body: refreshSchema }), controller.refres
 authRouter.post(
   '/register',
   requireAuth,
+  requirePasswordChanged,
   requireRole('admin'),
   validate({ body: registerSchema }),
   controller.register,
 );
 
+/**
+ * Sortie de secours : volontairement SANS requirePasswordChanged, sinon un
+ * compte sur mot de passe temporaire n'aurait aucun moyen d'en sortir.
+ */
+authRouter.patch(
+  '/password',
+  requireAuth,
+  validate({ body: changePasswordSchema }),
+  controller.changePassword,
+);
+
+// Sans requirePasswordChanged non plus : le client mobile interroge /me au
+// démarrage pour savoir s'il doit afficher l'écran de changement.
 authRouter.get('/me', requireAuth, controller.me);
 
 export { userRepo as userRepository, service as authService };

@@ -17,6 +17,11 @@ export const userSchema = new Schema(
     fullName: { type: String, required: true, trim: true, maxlength: 120 },
     role: { type: String, required: true, enum: USER_ROLES, default: 'field_agent' },
     active: { type: Boolean, default: true },
+    /**
+     * Vrai tant que le compte utilise le mot de passe temporaire posé par
+     * l'admin à sa création. Remis à faux par PATCH /auth/password.
+     */
+    mustChangePassword: { type: Boolean, default: false },
   },
   {
     collection: 'users',

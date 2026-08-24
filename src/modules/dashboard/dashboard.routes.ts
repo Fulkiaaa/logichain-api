@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { requireAuth, requireRole } from '@/middlewares/auth.middleware';
+import {
+  requireAuth,
+  requirePasswordChanged,
+  requireRole,
+} from '@/middlewares/auth.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 import { eventRepository } from '@/modules/events/event.routes';
 import { ITEM_CATEGORIES } from '@/modules/items/item.model';
@@ -19,6 +23,7 @@ const allocationService = new ResourceAllocationService(itemRepository, eventRep
 export const dashboardRouter = Router();
 
 dashboardRouter.use(requireAuth);
+dashboardRouter.use(requirePasswordChanged);
 
 dashboardRouter.get(
   '/events/:id/carbon-footprint',
