@@ -31,6 +31,13 @@ const rect = (lng: number, lat: number, dd: number) => ({
 const pt = (lng: number, lat: number) => ({ type: 'Point' as const, coordinates: [lng, lat] as [number, number] });
 const dt = (s: string) => new Date(s);
 
+/**
+ * Décalage pseudo-aléatoire mais déterministe dans [-0.5, 0.5].
+ * Déterministe = deux exécutions du seed produisent la même carte : indispensable
+ * pour une démo reproductible (Math.random donnerait un placement différent à chaque fois).
+ */
+const jitter = (n: number, salt: number) => (((n * 7919 + salt * 104729) % 1000) / 1000 - 0.5);
+
 async function main(): Promise<void> {
   await mongoose.connect(URI);
   console.log('Connecté à', URI, '\nRéinitialisation des collections…');
@@ -127,7 +134,12 @@ async function main(): Promise<void> {
       const status = statusPlan[k % statusPlan.length]!;
       const op = agents[k % agents.length]!;
       const onSite = ['allocated', 'in_transit', 'deployed'].includes(status);
-      const loc = pt(C[0] + ((k % 7) - 3) * 0.0006, C[1] + ((k % 5) - 2) * 0.0006);
+      // Grille 7 x 5 (35 emplacements) + dispersion intra-cellule : chaque équipement
+      // obtient une position unique, sans jamais sortir de sa cellule ni du site.
+      const loc = pt(
+        C[0] + ((k % 7) - 3) * 0.0006 + jitter(k, 1) * 0.00045,
+        C[1] + ((k % 5) - 2) * 0.0006 + jitter(k, 2) * 0.00045,
+      );
       const base = dt('2026-07-08T07:00:00Z');
       const doc: Record<string, unknown> = {
         qrCode: `LC-${s.pfx}-${String(counters[s.pfx]).padStart(3, '0')}`,
