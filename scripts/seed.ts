@@ -20,7 +20,7 @@ import { UserModel } from '@/modules/auth/user.model';
 
 const URI = process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/logichain?directConnection=true';
 const PASSWORD = process.env.SEED_PASSWORD ?? 'LogiChain2026!';
-const C: [number, number] = [2.4053, 48.929]; // centre du site (Parc de la Courneuve)
+const C: [number, number] = [0.1235, 49.5175]; // centre du site (Forêt de Montgeon, Le Havre)
 
 const rect = (lng: number, lat: number, dd: number) => ({
   type: 'Polygon' as const,
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
   const movingIds = items.filter((i) => ['in_transit', 'deployed'].includes(i.status)).map((i) => i._id);
 
   // ---------- FEUILLES DE ROUTE ----------
-  const depot = pt(2.3870, 48.9120);
+  const depot = pt(0.1400, 49.4830); // dépôt logistique — zone portuaire du Havre
   const depotSud = pt(1.4440, 43.6045);
   await RouteModel.insertMany([
     {
