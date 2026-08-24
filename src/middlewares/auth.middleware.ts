@@ -96,9 +96,18 @@ export const requirePasswordChanged: RequestHandler = (req, _res, next) => {
   next();
 };
 
-export const requireRole =
-  (...allowed: UserRole[]): RequestHandler =>
-  (req, _res, next) => {
+/**
+ * Garde de rôle. Le tableau des rôles autorisés est exposé sur le handler
+ * (`allowedRoles`) : c'est ce qui permet à `permissionMatrix.test.ts` de relire
+ * la matrice d'autorisation réellement branchée sur les routeurs, plutôt que de
+ * la redocumenter à côté du code — où elle divergerait tôt ou tard.
+ */
+export interface RoleGuard extends RequestHandler {
+  readonly allowedRoles: readonly UserRole[];
+}
+
+export const requireRole = (...allowed: UserRole[]): RoleGuard => {
+  const guard: RequestHandler = (req, _res, next) => {
     if (!req.user) {
       throw new UnauthorizedError();
     }
@@ -107,3 +116,5 @@ export const requireRole =
     }
     next();
   };
+  return Object.assign(guard, { allowedRoles: Object.freeze([...allowed]) });
+};

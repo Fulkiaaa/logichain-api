@@ -225,7 +225,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'post', path: '/api/v1/items', tags: ['Items'], summary: 'Créer un item',
   security: SECURED, request: { body: json(createItemSchema) },
-  responses: { 201: { description: 'Item créé', ...json(itemSchema) }, 400: err('Validation'), 409: err('QR déjà existant') },
+  responses: { 201: { description: 'Item créé', ...json(itemSchema) }, 400: err('Validation'), 403: err('Réservé aux admins et responsables logistiques'), 409: err('QR déjà existant') },
 });
 registry.registerPath({
   method: 'get', path: '/api/v1/items/by-qr/{qrCode}', tags: ['Items'], summary: 'Item par code QR (scan)',
@@ -240,12 +240,12 @@ registry.registerPath({
 registry.registerPath({
   method: 'patch', path: '/api/v1/items/{id}', tags: ['Items'], summary: 'Modifier un item',
   security: SECURED, request: { params: idParamSchema, body: json(updateItemSchema) },
-  responses: { 200: { description: 'Item modifié', ...json(itemSchema) }, 409: err('Conflit de version') },
+  responses: { 200: { description: 'Item modifié', ...json(itemSchema) }, 403: err('Réservé aux admins et responsables logistiques'), 409: err('Conflit de version') },
 });
 registry.registerPath({
   method: 'delete', path: '/api/v1/items/{id}', tags: ['Items'], summary: 'Supprimer un item',
   security: SECURED, request: { params: idParamSchema },
-  responses: { 204: { description: 'Supprimé' }, 404: err('Introuvable'), 422: err('Item en cours d\'utilisation') },
+  responses: { 204: { description: 'Supprimé' }, 403: err('Réservé aux admins'), 404: err('Introuvable'), 422: err('Item en cours d\'utilisation') },
 });
 const itemActions: Array<[string, string, z.ZodTypeAny]> = [
   ['scan', 'Scan terrain (géolocalisé)', scanSchema],

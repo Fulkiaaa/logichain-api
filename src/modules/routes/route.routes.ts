@@ -51,13 +51,17 @@ routeRouter.post(
   validate({ params: idParamSchema, body: transitionRouteSchema }),
   controller.transition,
 );
+// Saisie du kilométrage : geste du transporteur, il alimente le calcul carbone.
 routeRouter.post(
   '/:id/distance',
+  requireRole('admin', 'logistics_manager', 'transporter'),
   validate({ params: idParamSchema, body: recordDistanceSchema }),
   controller.recordDistance,
 );
+// Clôture d'un arrêt : geste du transporteur sur sa propre feuille de route.
 routeRouter.post(
   '/:id/stops/:stopId/complete',
+  requireRole('admin', 'logistics_manager', 'transporter'),
   validate({ params: stopParamSchema, body: completeStopSchema }),
   controller.completeStop,
 );
