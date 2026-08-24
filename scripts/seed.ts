@@ -151,7 +151,7 @@ async function main(): Promise<void> {
       reference: 'RTE-2026-01', eventId, transporterId: transporters[0], mode: 'truck',
       status: 'completed', plannedDistanceKm: 18, actualDistanceKm: 19.5, totalWeightKg: 4200,
       stops: [
-        { sequence: 0, label: 'Dépôt Aubervilliers', type: 'pickup', location: depot, scheduledAt: dt('2026-07-08T06:00:00Z'), completedAt: dt('2026-07-08T06:30:00Z'), itemIds: movingIds.slice(0, 5) },
+        { sequence: 0, label: 'Dépôt portuaire – Le Havre', type: 'pickup', location: depot, scheduledAt: dt('2026-07-08T06:00:00Z'), completedAt: dt('2026-07-08T06:30:00Z'), itemIds: movingIds.slice(0, 5) },
         { sequence: 1, label: 'Zone logistique – site', type: 'dropoff', location: pt(C[0] + 0.0024, C[1] - 0.0018), scheduledAt: dt('2026-07-08T07:15:00Z'), completedAt: dt('2026-07-08T07:40:00Z'), itemIds: movingIds.slice(0, 5) },
       ],
     },
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
       reference: 'RTE-2026-02', eventId, transporterId: transporters[1], mode: 'electric_truck',
       status: 'in_progress', plannedDistanceKm: 22, totalWeightKg: 2600,
       stops: [
-        { sequence: 0, label: 'Dépôt Aubervilliers', type: 'pickup', location: depot, scheduledAt: dt('2026-07-09T05:30:00Z'), completedAt: dt('2026-07-09T06:00:00Z'), itemIds: movingIds.slice(5, 9) },
+        { sequence: 0, label: 'Dépôt portuaire – Le Havre', type: 'pickup', location: depot, scheduledAt: dt('2026-07-09T05:30:00Z'), completedAt: dt('2026-07-09T06:00:00Z'), itemIds: movingIds.slice(5, 9) },
         { sequence: 1, label: 'Backstage – site', type: 'dropoff', location: pt(C[0] + 0.0022, C[1] + 0.0016), scheduledAt: dt('2026-07-09T06:45:00Z') },
       ],
     },
