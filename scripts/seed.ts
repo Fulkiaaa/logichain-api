@@ -20,7 +20,12 @@ import { UserModel } from '@/modules/auth/user.model';
 
 const URI = process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/logichain?directConnection=true';
 const PASSWORD = process.env.SEED_PASSWORD ?? 'LogiChain2026!';
-const C: [number, number] = [0.1235, 49.5175]; // centre du site (Forêt de Montgeon, Le Havre)
+// Centre du site : Forêt de Montgeon, Le Havre — le grand parc urbain de la
+// ville. Coordonnées relevées sur OpenStreetMap (emprise de la forêt :
+// lon 0.1267→0.1561, lat 49.5098→49.5310) ; les 5 zones ci-dessous y tiennent
+// entièrement. Ne pas déplacer sans revérifier qu'elles n'atterrissent pas
+// dans le tissu résidentiel voisin.
+const C: [number, number] = [0.1410, 49.5204];
 
 const rect = (lng: number, lat: number, dd: number) => ({
   type: 'Polygon' as const,
