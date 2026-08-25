@@ -118,6 +118,20 @@ export class AuthService {
     };
   }
 
+  /**
+   * Profil complet du titulaire du jeton. Le JWT ne porte que l'identité
+   * minimale (id, email, rôle) : le `fullName` et l'état `active` doivent être
+   * relus en base. Un seul appel Mongo, au démarrage de l'app cliente — c'est
+   * précisément pour ça que `requireAuth` n'en fait aucun sur les autres routes.
+   */
+  public async me(userId: string): Promise<UserEntity> {
+    const user = await this.users.findById(userId);
+    if (!user || !user.active) {
+      throw new UnauthorizedError();
+    }
+    return user;
+  }
+
   private signAccessToken(user: UserEntity): string {
     const payload: JwtPayload = {
       sub: user.id,

@@ -40,7 +40,13 @@ export class AuthController {
     res.status(200).json(result);
   };
 
+  /**
+   * Profil courant. On relit l'utilisateur en base plutôt que de renvoyer
+   * `req.user` (issu du JWT) : le jeton ne porte ni `fullName` ni `active`, or
+   * le contrat OpenAPI de cette route annonce un utilisateur complet.
+   */
   public me = async (req: Request, res: Response): Promise<void> => {
-    res.status(200).json(req.user);
+    const user = await this.service.me(req.user!.id);
+    res.status(200).json(user.toJSON());
   };
 }
