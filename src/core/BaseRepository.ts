@@ -94,10 +94,16 @@ export abstract class BaseRepository<TEntity extends BaseEntity, TRawDoc> {
     const limit = Math.min(100, Math.max(1, options.limit ?? 20));
     const skip = (page - 1) * limit;
 
+    // `_id` départage le tri. Sans lui, deux documents créés dans la même
+    // milliseconde (cas d'un `insertMany`) n'ont aucun ordre stable : deux
+    // requêtes `skip`/`limit` successives peuvent renvoyer deux fois la même
+    // ligne et en oublier une autre. Un client qui pagine perdrait des données.
+    const sort = { ...(options.sort ?? { createdAt: -1 }), _id: -1 } as Record<string, 1 | -1>;
+
     const [docs, count] = await Promise.all([
       this.model
         .find(filter)
-        .sort(options.sort ?? { createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit)
         .exec(),
