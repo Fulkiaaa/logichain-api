@@ -91,6 +91,12 @@ export class ItemController {
     res.status(200).json(item.toJSON());
   };
 
+  public maintenance = async (req: Request, res: Response): Promise<void> => {
+    const { note } = req.body as { note?: string };
+    const item = await this.service.sendToMaintenance(req.params.id!, req.user!.id, note);
+    res.status(200).json(item.toJSON());
+  };
+
   public returnToStock = async (req: Request, res: Response): Promise<void> => {
     const item = await this.service.returnToStock(req.params.id!, req.user!.id);
     res.status(200).json(item.toJSON());

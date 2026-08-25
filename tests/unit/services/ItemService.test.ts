@@ -99,3 +99,73 @@ describe('ItemService.allocateBatch (transaction ACID)', () => {
     expect(repo.findByIdInSession).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Mise en maintenance — machine à états.
+ *
+ * La règle vit dans l'entité (`ALLOWED_TRANSITIONS`), pas dans le service : on
+ * la teste donc directement sur `ItemEntity`, sans repository. Le point
+ * sensible est le sort d'`eventId` : la maintenance CONSERVE le rattachement
+ * (l'équipement reste dans le secteur mis en cache par l'app mobile), seul le
+ * retour au stock détache.
+ */
+describe('ItemEntity.sendToMaintenance (machine à états)', () => {
+  it('in_stock → in_maintenance, et trace le mouvement daté', () => {
+    const item = buildItem('507f1f77bcf86cd799439201');
+
+    item.sendToMaintenance('op-1', 'Révision préventive');
+
+    expect(item.status).toBe('in_maintenance');
+    const last = item.history.at(-1)!;
+    expect(last).toMatchObject({
+      type: 'maintenance',
+      fromStatus: 'in_stock',
+      toStatus: 'in_maintenance',
+      operatorId: 'op-1',
+      note: 'Révision préventive',
+    });
+  });
+
+  it('deployed → in_maintenance CONSERVE eventId (l\'item reste dans le secteur)', () => {
+    const item = buildItem('507f1f77bcf86cd799439202', {
+      status: 'deployed',
+      eventId: EVENT_ID,
+    });
+
+    item.sendToMaintenance('op-1');
+
+    expect(item.status).toBe('in_maintenance');
+    expect(item.eventId).toBe(EVENT_ID);
+  });
+
+  it('la note est facultative', () => {
+    const item = buildItem('507f1f77bcf86cd799439203');
+    item.sendToMaintenance('op-1');
+    expect(item.history.at(-1)).not.toHaveProperty('note');
+  });
+
+  it('in_transit → in_maintenance est refusé (422) : on répare, on n\'immobilise pas un camion', () => {
+    const item = buildItem('507f1f77bcf86cd799439204', { status: 'in_transit' });
+    expect(() => item.sendToMaintenance('op-1')).toThrow(BusinessRuleError);
+    expect(item.status).toBe('in_transit');
+  });
+
+  it('lost → in_maintenance est refusé : « perdu » est un état terminal', () => {
+    const item = buildItem('507f1f77bcf86cd799439205', { status: 'lost' });
+    expect(() => item.sendToMaintenance('op-1')).toThrow(BusinessRuleError);
+  });
+
+  it('boucle complète : deployed → maintenance → in_stock, et LÀ eventId est détaché', () => {
+    const item = buildItem('507f1f77bcf86cd799439206', {
+      status: 'deployed',
+      eventId: EVENT_ID,
+    });
+
+    item.sendToMaintenance('op-1', 'Ballast HS');
+    expect(item.eventId).toBe(EVENT_ID);
+
+    item.returnToStock('op-1');
+    expect(item.status).toBe('in_stock');
+    expect(item.eventId).toBeUndefined();
+  });
+});

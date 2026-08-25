@@ -55,6 +55,7 @@ const ITEMS: Expected = {
   'POST /:id/allocate': ['admin', 'logistics_manager'],
   // Un transporteur achemine, il n'installe pas sur site.
   'POST /:id/deploy': ['admin', 'logistics_manager', 'field_agent'],
+  'POST /:id/maintenance': ['admin', 'logistics_manager', 'field_agent'],
   'POST /:id/return': ['admin', 'logistics_manager', 'field_agent'],
 };
 

@@ -261,6 +261,30 @@ export class ItemEntity extends BaseEntity {
     this.touch();
   }
 
+  /**
+   * Mise hors service pour révision ou réparation.
+   * Transitions autorisées : `in_stock → in_maintenance`, `deployed → in_maintenance`.
+   *
+   * `eventId` est volontairement CONSERVÉ, comme dans `markLost()` : un
+   * équipement tombé en panne sur site reste rattaché à son événement, sinon il
+   * disparaîtrait du secteur mis en cache par l'app et l'agent ne saurait plus
+   * qu'il existe. Seul `returnToStock()` détache — le matériel repart au dépôt.
+   */
+  public sendToMaintenance(operatorId: string, note?: string): void {
+    this.assertTransition('in_maintenance');
+    const previous = this._status;
+    this._status = 'in_maintenance';
+    this.appendMovement({
+      at: new Date(),
+      type: 'maintenance',
+      fromStatus: previous,
+      toStatus: 'in_maintenance',
+      operatorId,
+      ...(note ? { note } : {}),
+    });
+    this.touch();
+  }
+
   /** Retour stock (deployed → in_transit → in_stock ou direct). */
   public returnToStock(operatorId: string): void {
     this.assertTransition('in_stock');

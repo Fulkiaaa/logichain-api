@@ -17,6 +17,7 @@ import {
   idParamSchema,
   listItemsQuerySchema,
   lostSchema,
+  maintenanceSchema,
   scanSchema,
   transitSchema,
   updateItemSchema,
@@ -91,6 +92,14 @@ itemRouter.post(
   '/:id/lost',
   validate({ params: idParamSchema, body: lostSchema }),
   controller.lost,
+);
+// Mise hors service : un agent constate la panne sur site. Le transporteur
+// achemine, il ne décide pas d'une immobilisation — même garde que `deploy`.
+itemRouter.post(
+  '/:id/maintenance',
+  requireRole('admin', 'logistics_manager', 'field_agent'),
+  validate({ params: idParamSchema, body: maintenanceSchema }),
+  controller.maintenance,
 );
 // Retour au stock depuis le terrain.
 itemRouter.post(

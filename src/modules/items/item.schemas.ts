@@ -58,6 +58,10 @@ export const lostSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+export const maintenanceSchema = z.object({
+  note: z.string().max(500).optional(),
+});
+
 export const listItemsQuerySchema = z.object({
   eventId: objectIdSchema.optional(),
   status: z.enum(ITEM_STATUSES).optional(),

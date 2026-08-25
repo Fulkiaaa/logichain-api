@@ -37,6 +37,7 @@ import {
   idParamSchema,
   listItemsQuerySchema,
   lostSchema,
+  maintenanceSchema,
   objectIdSchema,
   scanSchema,
   transitSchema,
@@ -254,6 +255,7 @@ const itemActions: Array<[string, string, z.ZodTypeAny]> = [
   ['deploy', 'Déployer sur site', deploySchema],
   ['anomaly', 'Déclarer une anomalie', anomalySchema],
   ['lost', 'Marquer perdu', lostSchema],
+  ['maintenance', 'Mettre en maintenance', maintenanceSchema],
 ];
 for (const [action, summary, schema] of itemActions) {
   registry.registerPath({

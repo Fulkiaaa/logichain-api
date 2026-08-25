@@ -154,6 +154,16 @@ export class ItemService {
     return this.repo.save(item);
   }
 
+  public async sendToMaintenance(
+    id: string,
+    operatorId: string,
+    note?: string,
+  ): Promise<ItemEntity> {
+    const item = await this.getById(id);
+    item.sendToMaintenance(operatorId, note);
+    return this.repo.save(item);
+  }
+
   public async returnToStock(id: string, operatorId: string): Promise<ItemEntity> {
     const item = await this.getById(id);
     item.returnToStock(operatorId);
