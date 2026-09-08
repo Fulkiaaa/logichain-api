@@ -1,4 +1,4 @@
-import type { ErrorRequestHandler } from 'express';
+import type { ErrorRequestHandler, RequestHandler } from 'express';
 import mongoose from 'mongoose';
 import { ZodError } from 'zod';
 
@@ -47,7 +47,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   });
 };
 
-export const notFoundHandler: import('express').RequestHandler = (req, res) => {
+export const notFoundHandler: RequestHandler = (req, res) => {
   res.status(404).json({
     error: { code: 'ROUTE_NOT_FOUND', message: `Route inconnue : ${req.method} ${req.path}` },
   });

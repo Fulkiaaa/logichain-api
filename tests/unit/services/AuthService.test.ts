@@ -3,10 +3,10 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '@/config/env';
 import { BusinessRuleError, UnauthorizedError } from '@/core/errors';
+import type { JwtPayload } from '@/middlewares/auth.middleware';
 import { AuthService } from '@/modules/auth/auth.service';
 import { UserEntity } from '@/modules/auth/user.entity';
 import type { UserRepository } from '@/modules/auth/user.repository';
-import type { JwtPayload } from '@/middlewares/auth.middleware';
 
 const USER_ID = '507f1f77bcf86cd799439011';
 

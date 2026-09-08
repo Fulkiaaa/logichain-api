@@ -1,7 +1,7 @@
 import { BusinessRuleError, NotFoundError } from '@/core/errors';
+import type { EventRepository } from '@/modules/events/event.repository';
 import type { ItemCategory } from '@/modules/items/item.model';
 import type { ItemRepository } from '@/modules/items/item.repository';
-import type { EventRepository } from '@/modules/events/event.repository';
 
 /**
  * ============================================================================
@@ -271,7 +271,7 @@ export class ResourceAllocationService {
     const available: ResourceVector = {};
     let page = 1;
     const limit = 200;
-    while (true) {
+    for (;;) {
       const res = await this.itemRepo.listWithFilters({ status: 'in_stock' }, { page, limit });
       for (const item of res.data) {
         available[item.category] = (available[item.category] ?? 0) + 1;
@@ -286,7 +286,7 @@ export class ResourceAllocationService {
     const allocated: ResourceVector = {};
     let page = 1;
     const limit = 200;
-    while (true) {
+    for (;;) {
       const res = await this.itemRepo.listWithFilters({ eventId }, { page, limit });
       for (const item of res.data) {
         if (item.status === 'allocated' || item.status === 'in_transit' || item.status === 'deployed') {

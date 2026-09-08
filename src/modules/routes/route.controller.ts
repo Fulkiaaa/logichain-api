@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 
+import type { RouteStatus } from './route.model';
 import type { RouteService } from './route.service';
 
 export class RouteController {
@@ -31,7 +32,7 @@ export class RouteController {
   };
 
   public transition = async (req: Request, res: Response): Promise<void> => {
-    const { status } = req.body as { status: import('./route.model').RouteStatus };
+    const { status } = req.body as { status: RouteStatus };
     const route = await this.service.transition(req.params.id!, status);
     res.status(200).json(route.toJSON());
   };

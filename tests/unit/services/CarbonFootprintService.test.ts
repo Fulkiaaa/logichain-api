@@ -1,10 +1,10 @@
-import { CarbonFootprintService, TRANSPORT_EMISSION_FACTORS } from '@/services/CarbonFootprintService';
-import { ItemEntity } from '@/modules/items/item.entity';
 import { EventEntity } from '@/modules/events/event.entity';
-import { RouteEntity } from '@/modules/routes/route.entity';
 import type { EventRepository } from '@/modules/events/event.repository';
+import { ItemEntity } from '@/modules/items/item.entity';
 import type { ItemRepository } from '@/modules/items/item.repository';
+import { RouteEntity } from '@/modules/routes/route.entity';
 import type { RouteRepository } from '@/modules/routes/route.repository';
+import { CarbonFootprintService, TRANSPORT_EMISSION_FACTORS } from '@/services/CarbonFootprintService';
 
 const buildItem = (overrides: Partial<ConstructorParameters<typeof ItemEntity>[0]> = {}): ItemEntity =>
   new ItemEntity({

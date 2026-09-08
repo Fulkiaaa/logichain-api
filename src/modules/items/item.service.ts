@@ -1,8 +1,8 @@
+import type { PaginatedResult, PaginationOptions } from '@/core/BaseRepository';
 import { BusinessRuleError, ConflictError, NotFoundError } from '@/core/errors';
 
 import type { GeoPoint, ItemEntity } from './item.entity';
 import type { ItemRepository, ItemFilters } from './item.repository';
-import type { PaginatedResult, PaginationOptions } from '@/core/BaseRepository';
 import type { CreateItemInput } from './item.schemas';
 
 /**

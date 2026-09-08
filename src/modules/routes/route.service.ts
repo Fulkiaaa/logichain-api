@@ -1,5 +1,5 @@
-import { ConflictError } from '@/core/errors';
 import type { PaginatedResult, PaginationOptions } from '@/core/BaseRepository';
+import { ConflictError } from '@/core/errors';
 
 import type { RouteEntity } from './route.entity';
 import type { RouteStatus } from './route.model';

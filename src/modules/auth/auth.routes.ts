@@ -9,13 +9,13 @@ import { loginLimiter } from '@/middlewares/rate-limit.middleware';
 import { validate } from '@/middlewares/validate.middleware';
 
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 import {
   changePasswordSchema,
   loginSchema,
   refreshSchema,
   registerSchema,
 } from './auth.schemas';
+import { AuthService } from './auth.service';
 import { UserRepository } from './user.repository';
 
 const userRepo = new UserRepository();

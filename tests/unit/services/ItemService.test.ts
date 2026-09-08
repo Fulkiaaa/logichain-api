@@ -1,7 +1,7 @@
 import { BusinessRuleError, NotFoundError } from '@/core/errors';
 import { ItemEntity, type ItemProps } from '@/modules/items/item.entity';
-import { ItemService } from '@/modules/items/item.service';
 import type { ItemRepository } from '@/modules/items/item.repository';
+import { ItemService } from '@/modules/items/item.service';
 
 const EVENT_ID = '507f1f77bcf86cd799439010';
 

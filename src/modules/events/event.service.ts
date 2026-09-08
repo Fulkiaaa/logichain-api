@@ -1,9 +1,9 @@
-import { ConflictError } from '@/core/errors';
 import type { PaginatedResult, PaginationOptions } from '@/core/BaseRepository';
+import { ConflictError } from '@/core/errors';
 
 import type { EventEntity, EventZone } from './event.entity';
-import type { EventFilters, EventRepository } from './event.repository';
 import type { EventStatus } from './event.model';
+import type { EventFilters, EventRepository } from './event.repository';
 import type { CreateEventInput, UpdateEventInput } from './event.schemas';
 
 export class EventService {

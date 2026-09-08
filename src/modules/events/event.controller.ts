@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 
 import { itemService } from '@/modules/items/item.routes';
 
+import type { EventStatus } from './event.model';
 import type { EventService } from './event.service';
 
 export class EventController {
@@ -43,7 +44,7 @@ export class EventController {
   };
 
   public transition = async (req: Request, res: Response): Promise<void> => {
-    const { status } = req.body as { status: import('./event.model').EventStatus };
+    const { status } = req.body as { status: EventStatus };
     const event = await this.service.transition(req.params.id!, status);
     res.status(200).json(event.toJSON());
   };

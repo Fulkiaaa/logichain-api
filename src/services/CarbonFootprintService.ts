@@ -8,7 +8,8 @@ import type { RouteEntity } from '@/modules/routes/route.entity';
 import type { TransportMode } from '@/modules/routes/route.model';
 import type { RouteRepository } from '@/modules/routes/route.repository';
 
-import { AdemeFactorService, ademeFactorService } from './AdemeFactorService';
+import type { AdemeFactorService } from './AdemeFactorService';
+import { ademeFactorService } from './AdemeFactorService';
 
 /**
  * ============================================================================
@@ -191,7 +192,7 @@ export class CarbonFootprintService {
     const all: ItemEntity[] = [];
     let page = 1;
     const limit = 100;
-    while (true) {
+    for (;;) {
       const res = await this.itemRepo.listWithFilters({ eventId }, { page, limit });
       all.push(...res.data);
       if (page >= res.totalPages) break;
@@ -204,7 +205,7 @@ export class CarbonFootprintService {
     const all: RouteEntity[] = [];
     let page = 1;
     const limit = 100;
-    while (true) {
+    for (;;) {
       const res = await this.routeRepo.listWithFilters({ eventId }, { page, limit });
       all.push(...res.data);
       if (page >= res.totalPages) break;
