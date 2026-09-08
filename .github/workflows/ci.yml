@@ -5,11 +5,10 @@ on:
   pull_request:
     branches: [develop, main]
   push:
-    branches: [develop, main]
-  # Déclenchement manuel : permet de vérifier le pipeline sur la branche de travail
-  # ci/github-actions avant toute PR (aucune des deux branches ci-dessus n'existe encore
-  # pour ce push, `develop` étant créée par une tâche ultérieure).
-  workflow_dispatch:
+    # NOTE TEMPORAIRE (retirée avant la version finale) : ci/github-actions ajoutée ici
+    # uniquement pour obtenir une exécution réelle du pipeline sans ouvrir de PR, ni
+    # pousser sur main. La liste finale ne comporte que [develop, main] comme prévu au brief.
+    branches: [develop, main, ci/github-actions]
 
 jobs:
   quality:
