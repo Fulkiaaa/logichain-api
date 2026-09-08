@@ -6,10 +6,6 @@ on:
     branches: [develop, main]
   push:
     branches: [develop, main]
-  # Déclenchement manuel temporaire : permet de vérifier le pipeline sur la branche de
-  # travail ci/github-actions après l'assainissement ESLint/couverture, sans ouvrir de
-  # PR ni pousser sur main. Retiré dans le commit suivant.
-  workflow_dispatch:
 
 jobs:
   quality:
