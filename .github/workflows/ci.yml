@@ -6,6 +6,10 @@ on:
     branches: [develop, main]
   push:
     branches: [develop, main]
+  # Déclenchement manuel : permet de vérifier le pipeline sur la branche de travail
+  # ci/github-actions avant toute PR (aucune des deux branches ci-dessus n'existe encore
+  # pour ce push, `develop` étant créée par une tâche ultérieure).
+  workflow_dispatch:
 
 jobs:
   quality:
