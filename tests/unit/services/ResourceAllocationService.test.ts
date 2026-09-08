@@ -1,4 +1,34 @@
-import { ResourceState } from '@/services/ResourceAllocationService';
+import { EventEntity } from '@/modules/events/event.entity';
+import type { EventRepository } from '@/modules/events/event.repository';
+import { ItemEntity } from '@/modules/items/item.entity';
+import type { ItemRepository } from '@/modules/items/item.repository';
+import { ResourceAllocationService, ResourceState } from '@/services/ResourceAllocationService';
+
+const buildEvent = (id: string): EventEntity =>
+  new EventEntity({
+    id,
+    name: 'Festival éco',
+    slug: 'festival-eco',
+    status: 'active',
+    startDate: new Date('2026-06-01'),
+    endDate: new Date('2026-06-05'),
+    zones: [],
+    managerId: 'mgr-1',
+  });
+
+const buildItem = (overrides: Partial<ConstructorParameters<typeof ItemEntity>[0]> = {}): ItemEntity =>
+  new ItemEntity({
+    id: '507f1f77bcf86cd799439011',
+    qrCode: 'QR-001',
+    label: 'Projecteur LED',
+    category: 'lighting',
+    status: 'in_stock',
+    weightKg: 12,
+    lifespanYears: 10,
+    manufacturingCo2Kg: 500,
+    history: [],
+    ...overrides,
+  });
 
 describe('ResourceState (Banker\'s Algorithm)', () => {
   describe('isSafe', () => {
@@ -150,6 +180,196 @@ describe('ResourceState (Banker\'s Algorithm)', () => {
       // une nouvelle allocation aggraverait
       const next = state.withAllocation('E1', 'lighting', 1);
       expect(next.isSafe().safe).toBe(false);
+    });
+  });
+});
+
+describe('ResourceAllocationService', () => {
+  let service: ResourceAllocationService;
+  let itemRepo: jest.Mocked<ItemRepository>;
+  let eventRepo: jest.Mocked<EventRepository>;
+
+  beforeEach(() => {
+    itemRepo = {
+      listWithFilters: jest.fn(),
+    } as unknown as jest.Mocked<ItemRepository>;
+    eventRepo = {
+      findById: jest.fn(),
+    } as unknown as jest.Mocked<EventRepository>;
+
+    service = new ResourceAllocationService(itemRepo, eventRepo);
+  });
+
+  describe('buildCurrentState', () => {
+    it('agrège le stock disponible sur plusieurs pages (pagination)', async () => {
+      // 2 pages d'items in_stock : la boucle de pagination de computeAvailableStock
+      // doit consommer toutes les pages, pas seulement la première.
+      itemRepo.listWithFilters.mockImplementation(async (_filters, options) => {
+        if (options.page === 1) {
+          return {
+            data: [buildItem({ category: 'lighting' }), buildItem({ category: 'sound' })],
+            count: 3,
+            page: 1,
+            limit: 2,
+            totalPages: 2,
+          };
+        }
+        return {
+          data: [buildItem({ category: 'lighting' })],
+          count: 3,
+          page: 2,
+          limit: 2,
+          totalPages: 2,
+        };
+      });
+
+      const state = await service.buildCurrentState({});
+      // 2 lighting (une par page) + 1 sound
+      expect(state.available.lighting).toBe(2);
+      expect(state.available.sound).toBe(1);
+      expect(itemRepo.listWithFilters).toHaveBeenCalledTimes(2);
+    });
+
+    it('ne compte comme "alloué" que les items allocated/in_transit/deployed, pas in_maintenance ni lost', async () => {
+      // Règle métier : un item en maintenance ou perdu ne bloque plus de capacité
+      // sur l'événement — computeEventAllocation doit les exclure du décompte.
+      itemRepo.listWithFilters.mockImplementation(async (filters) => {
+        if ('status' in filters && filters.status === 'in_stock') {
+          return { data: [], count: 0, page: 1, limit: 200, totalPages: 0 };
+        }
+        return {
+          data: [
+            buildItem({ category: 'lighting', status: 'allocated' }),
+            buildItem({ category: 'lighting', status: 'in_transit' }),
+            buildItem({ category: 'lighting', status: 'deployed' }),
+            buildItem({ category: 'lighting', status: 'in_maintenance' }),
+            buildItem({ category: 'lighting', status: 'lost' }),
+          ],
+          count: 5,
+          page: 1,
+          limit: 200,
+          totalPages: 1,
+        };
+      });
+      eventRepo.findById.mockResolvedValue(buildEvent('evt-1'));
+
+      const state = await service.buildCurrentState({ 'evt-1': { lighting: 10 } });
+      // 3 items comptent (allocated, in_transit, deployed) ; maintenance et lost sont ignorés
+      expect(state.claims[0]!.allocated.lighting).toBe(3);
+    });
+
+    it('lève NotFoundError si une prévision référence un événement inexistant', async () => {
+      itemRepo.listWithFilters.mockResolvedValue({ data: [], count: 0, page: 1, limit: 200, totalPages: 0 });
+      eventRepo.findById.mockResolvedValue(null);
+
+      await expect(service.buildCurrentState({ 'evt-ghost': { lighting: 1 } })).rejects.toThrow(
+        /Event.*introuvable/,
+      );
+    });
+  });
+
+  describe('requestAllocation', () => {
+    it('refuse (sans lever d\'exception) une allocation dont le stock est insuffisant', async () => {
+      itemRepo.listWithFilters.mockImplementation(async (filters) => {
+        if ('status' in filters && filters.status === 'in_stock') {
+          return {
+            data: [buildItem({ category: 'lighting' })],
+            count: 1,
+            page: 1,
+            limit: 200,
+            totalPages: 1,
+          };
+        }
+        return { data: [], count: 0, page: 1, limit: 200, totalPages: 0 };
+      });
+      eventRepo.findById.mockResolvedValue(buildEvent('evt-1'));
+
+      const decision = await service.requestAllocation('evt-1', 'lighting', 5, {
+        'evt-1': { lighting: 10 },
+      });
+
+      expect(decision.granted).toBe(false);
+      expect(decision.reason).toMatch(/Stock insuffisant/);
+      expect(decision.safeSequence).toBeUndefined();
+    });
+
+    it('refuse une allocation qui mènerait à un état non sûr, même si le stock brut suffit', async () => {
+      // available lighting = 3. E1 et E2 réclament chacun un max de 8, chacun a déjà 4 alloués.
+      // Allouer 1 de plus à E1 le fait passer à need=3 ; E2 garde need=4 ; il ne reste que 2
+      // dispo après l'allocation → aucune séquence ne termine → état non sûr (422 attendu par l'appelant).
+      itemRepo.listWithFilters.mockImplementation(async (filters) => {
+        if ('status' in filters && filters.status === 'in_stock') {
+          return {
+            data: [buildItem({ category: 'lighting' }), buildItem({ category: 'lighting' }), buildItem({ category: 'lighting' })],
+            count: 3,
+            page: 1,
+            limit: 200,
+            totalPages: 1,
+          };
+        }
+        if ('eventId' in filters && filters.eventId === 'evt-1') {
+          return {
+            data: [
+              buildItem({ category: 'lighting', status: 'allocated' }),
+              buildItem({ category: 'lighting', status: 'allocated' }),
+              buildItem({ category: 'lighting', status: 'allocated' }),
+              buildItem({ category: 'lighting', status: 'allocated' }),
+            ],
+            count: 4,
+            page: 1,
+            limit: 200,
+            totalPages: 1,
+          };
+        }
+        // evt-2
+        return {
+          data: [
+            buildItem({ category: 'lighting', status: 'allocated' }),
+            buildItem({ category: 'lighting', status: 'allocated' }),
+            buildItem({ category: 'lighting', status: 'allocated' }),
+            buildItem({ category: 'lighting', status: 'allocated' }),
+          ],
+          count: 4,
+          page: 1,
+          limit: 200,
+          totalPages: 1,
+        };
+      });
+      eventRepo.findById.mockImplementation(async (id: string) => buildEvent(id));
+
+      const decision = await service.requestAllocation('evt-1', 'lighting', 1, {
+        'evt-1': { lighting: 8 },
+        'evt-2': { lighting: 8 },
+      });
+
+      expect(decision.granted).toBe(false);
+      expect(decision.reason).toMatch(/pas sûr/);
+    });
+
+    it('accorde une allocation sûre et renvoie l\'état résultant (needs par événement, séquence sûre)', async () => {
+      itemRepo.listWithFilters.mockImplementation(async (filters) => {
+        if ('status' in filters && filters.status === 'in_stock') {
+          return {
+            data: [buildItem({ category: 'lighting' }), buildItem({ category: 'lighting' })],
+            count: 2,
+            page: 1,
+            limit: 200,
+            totalPages: 1,
+          };
+        }
+        return { data: [], count: 0, page: 1, limit: 200, totalPages: 0 };
+      });
+      eventRepo.findById.mockResolvedValue(buildEvent('evt-1'));
+
+      const decision = await service.requestAllocation('evt-1', 'lighting', 1, {
+        'evt-1': { lighting: 2 },
+      });
+
+      expect(decision.granted).toBe(true);
+      expect(decision.reason).toBe('Allocation possible');
+      expect(decision.safeSequence).toEqual(['evt-1']);
+      expect(decision.resultingState?.available.lighting).toBe(1);
+      expect(decision.resultingState?.needs['evt-1']).toEqual({ lighting: 1 });
     });
   });
 });

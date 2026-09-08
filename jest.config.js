@@ -9,11 +9,11 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  // Seuls les services de src/services/ (logique algorithmique) sont testés unitairement,
+  // cf. CLAUDE.md — la mesure de couverture doit refléter ce périmètre documenté.
   collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/index.ts',
-    '!src/db/**',
+    'src/services/**/*.ts',
+    '!src/services/**/*.d.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
