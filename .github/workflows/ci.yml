@@ -1,0 +1,35 @@
+# Pipeline d'intégration continue : lint, typecheck, tests (avec couverture) et build.
+# Suite purement unitaire (tests/unit/) : aucun service MongoDB requis dans cette CI.
+name: ci
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  quality:
+    name: Qualité et tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Linter
+        run: npm run lint
+      - name: Vérification des types
+        run: npm run typecheck
+      # Les seuils de couverture (70 % statements/functions/lines, 65 % branches) sont
+      # définis dans jest.config.js et font échouer ce job d'eux-mêmes : rien à dupliquer ici.
+      - name: Tests et couverture
+        run: npm run test:coverage
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
