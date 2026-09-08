@@ -13,6 +13,15 @@ logistiques.
 
 ## 1. Démarrage rapide
 
+### Prérequis
+
+- Node.js ≥ 20 (`engines.node` dans `package.json`)
+- npm (fourni avec Node)
+- Docker + Docker Compose (pour Mongo en local, ou un `mongod` local monté
+  en replica set `rs0`)
+- `git`, et [`gh`](https://cli.github.com/) authentifié pour les commandes
+  de passation (`CONTRIBUTING.md`, § 8)
+
 ### En local (Node 20+ requis)
 
 ```bash
@@ -23,6 +32,33 @@ npm install
 docker compose up -d mongo        # ou un mongod local en replica set
 npm run dev                       # API sur http://localhost:3000
 ```
+
+### Variables d'environnement
+
+Source de vérité : le schéma Zod de `src/config/env.ts` (validé au boot,
+échec rapide si invalide). Voir aussi `.env.example`.
+
+| Variable                     | Obligatoire | Défaut          | Description                                                                 |
+|-------------------------------|:-----------:|-----------------|-------------------------------------------------------------------------------|
+| `NODE_ENV`                    | non         | `development`   | `development` \| `test` \| `production`                                      |
+| `PORT`                        | non         | `3000`           | Port d'écoute HTTP                                                            |
+| `LOG_LEVEL`                   | non         | `info`           | `fatal` \| `error` \| `warn` \| `info` \| `debug` \| `trace`                  |
+| `MONGO_URI`                   | **oui**     | —                | URI MongoDB (replica set `rs0` requis — Change Streams + transactions ACID)   |
+| `JWT_SECRET`                  | **oui**     | —                | ≥ 32 caractères (`openssl rand -base64 64`)                                   |
+| `JWT_EXPIRES_IN`               | non         | `2h`             | Durée de vie du token d'accès                                                 |
+| `JWT_REFRESH_EXPIRES_IN`       | non         | `7d`             | Durée de vie du refresh token                                                 |
+| `CORS_ORIGIN`                 | non         | `*`              | Origine autorisée (ex. `https://logichain.fulkia.fr` en prod)                 |
+| `BCRYPT_ROUNDS`               | non         | `12`             | Coût bcrypt, entre 4 et 15                                                     |
+| `RATE_LIMIT_WINDOW_MS`         | non         | `900000` (15 min)| Fenêtre du limiteur global `/api/v1`                                          |
+| `RATE_LIMIT_MAX`              | non         | `1000`           | Requêtes max par fenêtre (limiteur global)                                    |
+| `AUTH_RATE_LIMIT_WINDOW_MS`    | non         | `300000` (5 min) | Fenêtre du limiteur anti brute-force sur `/auth/login`                        |
+| `AUTH_RATE_LIMIT_MAX`          | non         | `10`             | Requêtes max par fenêtre (limiteur login)                                     |
+| `DOCS_USER`                    | non         | (vide)           | Identifiant Basic Auth pour `/docs` et `/openapi.json` (doc ouverte si absent) |
+| `DOCS_PASSWORD`                | non         | (vide)           | Mot de passe Basic Auth associé à `DOCS_USER`                                 |
+
+> Ne jamais committer de valeur réelle de `JWT_SECRET`, mot de passe ou URI
+> Mongo avec identifiants — ce dépôt est **public**. `.env` est ignoré par
+> git ; seul `.env.example` (valeurs factices) est versionné.
 
 ### En production (VPS Docker + Traefik)
 
@@ -369,6 +405,26 @@ Pour générer le hash localement :
 ```bash
 node -e "require('bcrypt').hash('changeme-now-please', 12).then(console.log)"
 ```
+
+---
+
+## 10. Contribution & passation
+
+Ce dépôt suit un modèle Gitflow (`main` ← `develop` ← `feature/*`), avec des
+règles de protection GitHub actives sur `main` et `develop` (checks CI
+obligatoires, historique linéaire sur `main`, pas d'acteur de contournement).
+
+Voir [`CONTRIBUTING.md`](./CONTRIBUTING.md) pour : le détail du modèle de
+branches, la convention de commit (Conventional Commits), le cycle de vie
+d'une Pull Request, la checklist de revue, et la **procédure de passation**
+à une future équipe (notamment le passage de la revue obligatoire de 0 à 1
+approbation).
+
+Pour l'exploitation et le déploiement de l'infrastructure qui héberge cette
+API (VM, Ansible, sauvegardes, procédures d'incident), voir le
+[`RUNBOOK.md`](https://github.com/Fulkiaaa/logichain-infra/blob/main/RUNBOOK.md)
+du dépôt `logichain-infra` (à venir — rédigé dans une tâche ultérieure du
+plan d'industrialisation).
 
 ---
 
