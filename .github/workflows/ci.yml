@@ -6,10 +6,6 @@ on:
     branches: [develop, main]
   push:
     branches: [develop, main]
-  # Déclenchement manuel temporaire pour valider l'ajout de gitleaks sur
-  # ci/github-actions (develop n'existe pas encore — tâche 13). Retiré une
-  # fois le run vert confirmé.
-  workflow_dispatch:
 
 jobs:
   quality:
