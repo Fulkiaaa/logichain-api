@@ -33,3 +33,16 @@ jobs:
         with:
           name: coverage
           path: coverage/
+
+  # Job séparé du job « Qualité et tests » — dont ni le nom ni la structure ne
+  # doivent changer (référencés par les règles de protection de branche).
+  secrets:
+    name: Détection de secrets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      # Historique propre à ce dépôt : aucune allowlist nécessaire.
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
